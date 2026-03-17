@@ -12,30 +12,42 @@ const TAB_ACCENTS = {
   'Invoice':   { bg: '#fdf6ed', border: '#f5d9a8', badge: '#B45309', label: '#B45309' },
 };
 
-const SYSTEM_PROMPTS = {
-  proposal: `You are a professional business writer specializing in freelance design proposals. 
-Write a polished, compelling project proposal for a freelance designer. 
+const TONES = [
+  { id: 'friendly',     label: 'Friendly',     emoji: '😊', description: 'Warm and conversational', color: '#2D6A4F', bg: '#f0f7f4', border: '#b7ddd0' },
+  { id: 'professional', label: 'Professional', emoji: '💼', description: 'Polished and business-ready', color: '#1e1e1e', bg: '#f5f1eb', border: '#d5cec4' },
+  { id: 'bold',         label: 'Bold',         emoji: '⚡', description: 'Direct and punchy',         color: '#B45309', bg: '#fdf6ed', border: '#f5d9a8' },
+];
+
+const TONE_MODIFIERS = {
+  friendly:     'Use a warm, conversational and genuinely human tone. Write like you are talking to a friend you respect. Be approachable, encouraging and personal. Avoid corporate language.',
+  professional: 'Use a polished, confident and business-ready tone. Be precise and clear. Project authority without being cold. Professional but never stiff.',
+  bold:         'Use a direct, punchy and memorable tone. Be confident and decisive. Short sentences. Strong verbs. Make every word earn its place. No filler, no waffle.',
+};
+
+function getSystemPrompt(key, tone = 'professional') {
+  const toneInstruction = `\nTONE INSTRUCTION: ${TONE_MODIFIERS[tone] || TONE_MODIFIERS.professional}\n`;
+  const prompts = {
+    proposal: `You are a professional business writer specializing in freelance design proposals.
+Write a polished, compelling project proposal for a freelance designer.
 Structure it with these sections: Project Overview, Scope of Work, Timeline, Investment (pricing), and Next Steps.
-Use a confident, professional but warm tone. Make it feel personalized, not templated.
-Keep it concise — under 400 words. Do not use excessive jargon.
-CRITICAL: Output plain text only. Do not use any markdown — no #, no **, no ___, no ---, no asterisks for bullets. Write section headings as plain capitalized text on their own line followed by a blank line.`,
-  followup: `You are a professional copywriter helping freelance designers win clients.
+Make it feel personalized, not templated. Keep it concise — under 400 words. Do not use excessive jargon.${toneInstruction}CRITICAL: Output plain text only. Do not use any markdown — no #, no **, no ___, no ---, no asterisks for bullets. Write section headings as plain capitalized text on their own line followed by a blank line.`,
+    followup: `You are a professional copywriter helping freelance designers win clients.
 Write a 3-email follow-up sequence for after sending a proposal that hasn't received a response.
 Email 1 (Day 3): Gentle check-in, keep it very short and friendly.
-Email 2 (Day 7): Add a small value-add or insight relevant to their project. 
+Email 2 (Day 7): Add a small value-add or insight relevant to their project.
 Email 3 (Day 14): Polite final follow-up, leave the door open.
 Label each email clearly: "Email 1 — Day 3:" on its own line, then the subject and body.
-Keep each email under 100 words. Conversational, never pushy.
-CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
-  invoice: `You are a professional copywriter helping freelance designers get paid on time.
+Keep each email under 100 words. Never pushy.${toneInstruction}CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
+    invoice: `You are a professional copywriter helping freelance designers get paid on time.
 Write 3 invoice reminder emails for different stages.
 Email 1: Friendly reminder (due date approaching, 3 days before).
 Email 2: Polite overdue notice (1 week past due).
 Email 3: Firm final notice (2 weeks past due).
 Label each clearly: "Reminder 1 — 3 Days Before Due:" on its own line, then subject and body.
-Keep each email under 100 words. Professional but never aggressive.
-CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
-};
+Keep each email under 100 words. Never aggressive.${toneInstruction}CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
+  };
+  return prompts[key];
+}
 
 function buildUserPrompt(tab, form) {
   const { designerName, clientName, projectType, budget, timeline, notes } = form;
@@ -138,6 +150,39 @@ function UpgradeModal({ onClose }) {
   );
 }
 
+function ToneSelector({ tone, setTone, loading }) {
+  return (
+    <div style={s.toneSelectorRow}>
+      <span style={s.toneLabel}>Tone</span>
+      <div style={s.tonePills}>
+        {TONES.map(t => {
+          const active = tone === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTone(t.id)}
+              disabled={loading}
+              title={t.description}
+              style={{
+                ...s.tonePill,
+                background:   active ? t.color : '#f5f1eb',
+                color:        active ? '#fff'   : '#5a5048',
+                borderColor:  active ? t.color  : '#e8e2d8',
+                boxShadow:    active ? `0 2px 8px ${t.color}40` : 'none',
+                opacity:      loading ? 0.5 : 1,
+                cursor:       loading ? 'not-allowed' : 'pointer',
+              }}
+            >
+              <span>{t.emoji}</span>
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AppPage({ isBeta, activateBeta }) {
   const [activeTab, setActiveTab]     = useState('Proposal');
   const [form, setForm]               = useState({ designerName: '', clientName: '', projectType: '', budget: '', timeline: '', notes: '' });
@@ -151,6 +196,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [usage, setUsage]             = useState(getUsage);
   const [betaInput, setBetaInput]     = useState('');
   const [betaError, setBetaError]     = useState(false);
+  const [tone, setTone]               = useState('professional');
   const outputRef = useRef(null);
 
   useEffect(() => {
@@ -208,7 +254,7 @@ export default function AppPage({ isBeta, activateBeta }) {
         body: JSON.stringify({
           model: 'claude-sonnet-4-5',
           max_tokens: 1000,
-          system: SYSTEM_PROMPTS[systemKey],
+          system: getSystemPrompt(systemKey, tone),
           messages: [{ role: 'user', content: buildUserPrompt(activeTab, form) }],
         }),
       });
@@ -337,6 +383,8 @@ export default function AppPage({ isBeta, activateBeta }) {
               <span style={s.errorIcon}>!</span>{globalError}
             </div>
           )}
+
+          <ToneSelector tone={tone} setTone={setTone} loading={loading} />
 
           <button onClick={handleGenerate} disabled={loading || atLimit}
             style={{ ...s.generateBtn, ...(loading || atLimit ? s.generateBtnDisabled : {}) }}>
@@ -488,4 +536,8 @@ const s = {
   modalBody:       { fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 28 },
   modalCta:        { display: 'block', background: '#1e1e1e', color: '#f5f1eb', borderRadius: 12, padding: '14px 24px', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'center' },
   modalDismiss:    { background: 'transparent', border: 'none', color: '#a09488', fontSize: 13, cursor: 'pointer', width: '100%', padding: '8px' },
+  toneSelectorRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' },
+  toneLabel:       { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0 },
+  tonePills:       { display: 'flex', gap: 8, flexWrap: 'wrap' },
+  tonePill:        { display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 100, border: '1.5px solid', fontSize: 13, fontWeight: 600, transition: 'all 0.18s ease', fontFamily: "'DM Sans', sans-serif" },
 };
