@@ -202,11 +202,11 @@ export default function AppPage({ isBeta, activateBeta }) {
     setLoading(true);
     const systemKey = activeTab === 'Proposal' ? 'proposal' : activeTab === 'Follow-Up' ? 'followup' : 'invoice';
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
+          model: 'claude-sonnet-4-5',
           max_tokens: 1000,
           system: SYSTEM_PROMPTS[systemKey],
           messages: [{ role: 'user', content: buildUserPrompt(activeTab, form) }],
