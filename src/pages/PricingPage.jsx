@@ -111,10 +111,10 @@ export default function PricingPage() {
   return (
     <div style={s.page}>
       {/* Header */}
-<main style={s.main}>
+<main style={s.main} className="pc-pricing-main">
 
         {/* Hero */}
-        <div style={s.hero}>
+        <div style={s.hero} className="pc-hero">
           <div style={s.eyebrow}>Simple, transparent pricing</div>
           <h1 style={s.heroTitle}>
             Pay for what<br />
@@ -143,7 +143,7 @@ export default function PricingPage() {
         </div>
 
         {/* Pricing cards */}
-        <div style={s.cardsRow}>
+        <div style={s.cardsRow} className="pc-cards-row">
           {TIERS.map((tier, idx) => {
             const isHovered = hovered === tier.id;
             const isPro = tier.id === "pro";
@@ -152,7 +152,8 @@ export default function PricingPage() {
                 key={tier.id}
                 onMouseEnter={() => setHovered(tier.id)}
                 onMouseLeave={() => setHovered(null)}
-                style={{
+                className="pc-pricing-card"
+              style={{
                   ...s.card,
                   ...(isPro ? s.cardFeatured : {}),
                   borderColor: isPro ? "#3d5470" : isHovered ? "#c5bdb3" : "#e8e2d8",
@@ -216,7 +217,7 @@ export default function PricingPage() {
 
 
         {/* Coming soon teaser */}
-        <div style={s.comingSoon}>
+        <div style={s.comingSoon} className="pc-coming-soon">
           <div style={s.comingSoonInner}>
             <span style={s.comingSoonTag}>Coming soon</span>
             <div style={s.comingSoonTitle}>Agency plan — launching later in 2026</div>
@@ -225,7 +226,7 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ strip */}
-        <div style={s.faqRow}>
+        <div style={s.faqRow} className="pc-faq-row">
           {[
             { q: "Can I change plans anytime?", a: "Yes — upgrade, downgrade, or cancel anytime. No lock-in." },
             { q: "What counts as a generation?", a: "Each proposal, follow-up sequence, or invoice reminder is one generation." },
@@ -242,32 +243,6 @@ export default function PricingPage() {
       </main>
 <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #f5f1eb; }
-        a { text-decoration: none; }
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes grain {
-          0%, 100% { transform: translate(0, 0); }
-          10%  { transform: translate(-2%, -3%); }
-          20%  { transform: translate(3%, 2%); }
-          30%  { transform: translate(-1%, 4%); }
-          40%  { transform: translate(2%, -1%); }
-          50%  { transform: translate(-3%, 2%); }
-          60%  { transform: translate(1%, -3%); }
-          70%  { transform: translate(-2%, 1%); }
-          80%  { transform: translate(3%, -2%); }
-          90%  { transform: translate(-1%, 3%); }
-        }
-        button { cursor: pointer; transition: all 0.18s ease; }
-        button:hover { opacity: 0.88; transform: translateY(-1px); }
-        @media (max-width: 900px) {
-          .pp-cards { flex-direction: column !important; align-items: center !important; }
-          .pp-card  { width: 100% !important; max-width: 420px !important; transform: none !important; }
-          .pp-faq   { grid-template-columns: 1fr !important; }
-        }
       `}</style>
     </div>
   );

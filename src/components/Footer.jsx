@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 export default function Footer() {
   return (
-    <footer style={s.footer}>
+    <footer style={s.footer} className="pc-footer">
       <div style={s.inner}>
         <div style={s.logoRow}>
           <div style={s.logoMark}>PC</div>

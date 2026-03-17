@@ -109,7 +109,7 @@ export default function FeedbackPage() {
       <div style={s.page}>
         <div style={s.bgTexture} />
         <div style={s.thankYouWrap}>
-          <div style={s.thankYouCard}>
+          <div style={s.thankYouCard} className="pc-thankyou-card">
             <div style={s.thankYouIcon}>🙏</div>
             <h1 style={s.thankYouTitle}>Thank you, {name || "friend"}.</h1>
             <p style={s.thankYouBody}>Your feedback goes directly to the Pitchcraft team and will shape what we build next. We'll follow up personally once we've reviewed your responses.</p>
@@ -129,14 +129,14 @@ export default function FeedbackPage() {
   return (
     <div style={s.page}>
       <div style={s.bgTexture} />
-<main style={s.main}>
+<main style={s.main} className="pc-feedback-main">
         <div style={s.hero}>
           <h1 style={s.heroTitle}>Help us build something great.</h1>
           <p style={s.heroSub}>You're one of the first people to use Pitchcraft. Your feedback will directly shape the product before public launch. Be brutally honest — it's the most helpful thing you can do.</p>
         </div>
 
         {/* Name field */}
-        <div style={s.card}>
+        <div style={s.card} className="pc-feedback-card">
           <label style={s.label}>Your first name <span style={s.req}>*</span></label>
           <input value={name} onChange={e => setName(e.target.value)}
             placeholder="e.g. Sarah"
@@ -155,7 +155,7 @@ export default function FeedbackPage() {
                   {q.section}
                 </div>
               )}
-              <div style={s.card}>
+              <div style={s.card} className="pc-feedback-card">
                 <div style={s.qNum}>Q{i + 1}</div>
                 <label style={s.qLabel}>{q.label}</label>
                 {q.sub && <div style={s.qSub}>{q.sub}</div>}
@@ -171,7 +171,7 @@ export default function FeedbackPage() {
                 )}
 
                 {q.type === "choice" && (
-                  <div style={s.choiceRow}>
+                  <div style={s.choiceRow} className="pc-choice-row">
                     {q.options.map(opt => (
                       <button key={opt} onClick={() => set(q.id, opt)}
                         style={{ ...s.choiceBtn, ...(answers[q.id] === opt ? s.choiceBtnActive : {}) }}>
