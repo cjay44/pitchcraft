@@ -127,7 +127,7 @@ function SuccessToast({ show, tab }) {
 function UpgradeModal({ onClose }) {
   return (
     <div style={s.modalOverlay} onClick={onClose}>
-      <div style={s.modalCard} onClick={e => e.stopPropagation()}>
+      <div style={s.modalCard} className="pc-modal-card" onClick={e => e.stopPropagation()}>
         <div style={s.modalIcon}>⚡</div>
         <div style={s.modalTitle}>You've used all 10 free generations</div>
         <div style={s.modalBody}>Upgrade to Pro for unlimited proposals, follow-ups, and invoice reminders — plus brand voice, PDF export, and more.</div>
@@ -261,7 +261,7 @@ export default function AppPage({ isBeta, activateBeta }) {
       <div style={s.bgTexture} />
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
 
-      <main style={s.main}>
+      <main style={s.main} className="pc-main">
         {/* Hero */}
         <div style={s.hero}>
           <h1 style={s.heroTitle}>Win more clients.<br />Less writing.</h1>
@@ -291,7 +291,7 @@ export default function AppPage({ isBeta, activateBeta }) {
         {!isBeta && <UsageCounter used={usage} />}
 
         {/* Card */}
-        <div style={s.card}>
+        <div style={s.card} className="pc-card">
           <div style={s.tabRow}>
             {TABS.map(tab => (
               <button key={tab} onClick={() => handleTabSwitch(tab)} disabled={loading}
@@ -302,7 +302,7 @@ export default function AppPage({ isBeta, activateBeta }) {
           </div>
           <p style={s.tabDesc}>{tabDescriptions[activeTab]}</p>
 
-          <div style={s.formGrid}>
+          <div style={s.formGrid} className="pc-form-grid">
             {[
               { name: 'designerName', label: 'Your Name', placeholder: 'e.g. Sarah Chen', required: true },
               { name: 'clientName',   label: 'Client Name', placeholder: 'e.g. Bloom Studio', required: true },
@@ -350,7 +350,7 @@ export default function AppPage({ isBeta, activateBeta }) {
 
         {output || loading ? (
           <div ref={outputRef} style={{ ...s.outputCard, borderTop: `3px solid ${accent.border}` }}>
-            <div style={{ ...s.outputHeaderRow, background: accent.bg }}>
+            <div style={{ ...s.outputHeaderRow, background: accent.bg }} className="pc-output-header">
               <div style={s.outputTitleRow}>
                 <span style={{ ...s.outputBadge, background: accent.badge }}>{activeTab}</span>
                 <span style={s.outputTitle}>Output</span>
@@ -361,7 +361,7 @@ export default function AppPage({ isBeta, activateBeta }) {
                 </button>
               )}
             </div>
-            <div style={s.outputBody}>
+            <div style={s.outputBody} className="pc-output-body">
               {loading ? (
                 <div style={s.skeleton}>
                   {[100, 85, 92, 70, 88, 60].map((w, i) => (
@@ -387,16 +387,16 @@ export default function AppPage({ isBeta, activateBeta }) {
 
         {/* Pricing teaser */}
         {!isBeta && (
-          <div style={s.pricingTeaser}>
-            <div style={s.pricingTeaserInner}>
+          <div style={s.pricingTeaser} className="pc-pricing-teaser">
+            <div style={s.pricingTeaserInner} className="pc-pricing-teaser-inner">
               <div style={s.pricingTeaserLeft}>
                 <div style={s.pricingTeaserLabel}>Pitchcraft Pro</div>
                 <div style={s.pricingTeaserTitle}>Unlimited generations.<br />Your voice. Your brand.</div>
                 <div style={s.pricingTeaserBody}>Brand voice profile, 30-day history, PDF export, direct email send, and no watermark.</div>
               </div>
-              <div style={s.pricingTeaserRight}>
+              <div style={s.pricingTeaserRight} className="pc-pricing-teaser-right">
                 <div style={s.pricingPrice}>$29<span style={s.pricingPeriod}>/mo</span></div>
-                <Link to="/pricing" style={s.pricingCta}>See Pro plan</Link>
+                <Link to="/pricing" style={s.pricingCta} className="pc-pricing-cta">See Pro plan</Link>
                 <div style={s.pricingMeta}>No contracts · Cancel anytime</div>
               </div>
             </div>

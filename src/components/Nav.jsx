@@ -1,27 +1,41 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 export default function Nav({ isBeta }) {
   const { pathname } = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const close = () => setMenuOpen(false);
 
   return (
-    <header style={s.header}>
-      <Link to="/" style={s.logoRow}>
+    <header style={s.header} className="pc-header">
+      <Link to="/" style={s.logoRow} onClick={close}>
         <div style={s.logoMark}>PC</div>
         <div>
           <div style={s.logoText}>Pitchcraft</div>
-          <div style={s.logoSub}>For freelance designers · Australia</div>
+          <div style={s.logoSub} className="pc-logo-sub">For freelance designers · Australia</div>
         </div>
       </Link>
 
-      <nav style={s.nav}>
-        <Link to="/"        style={{ ...s.navLink, ...(pathname === "/"        ? s.navActive : {}) }}>App</Link>
-        <Link to="/pricing" style={{ ...s.navLink, ...(pathname === "/pricing" ? s.navActive : {}) }}>Pricing</Link>
-        <Link to="/feedback" style={{ ...s.navLink, ...(pathname === "/feedback" ? s.navActive : {}) }}>Feedback</Link>
+      <button
+        className="pc-hamburger"
+        onClick={() => setMenuOpen(!menuOpen)}
+        aria-label="Toggle menu"
+        style={s.hamburger}
+      >
+        <span className={`pc-ham-line${menuOpen ? ' pc-ham-open-1' : ''}`} />
+        <span className={`pc-ham-line${menuOpen ? ' pc-ham-open-2' : ''}`} />
+        <span className={`pc-ham-line${menuOpen ? ' pc-ham-open-3' : ''}`} />
+      </button>
+
+      <nav style={s.nav} className={`pc-nav${menuOpen ? ' open' : ''}`}>
+        <Link to="/"        onClick={close} style={{ ...s.navLink, ...(pathname === "/"        ? s.navActive : {}) }}>App</Link>
+        <Link to="/pricing" onClick={close} style={{ ...s.navLink, ...(pathname === "/pricing" ? s.navActive : {}) }}>Pricing</Link>
+        <Link to="/feedback" onClick={close} style={{ ...s.navLink, ...(pathname === "/feedback" ? s.navActive : {}) }}>Feedback</Link>
         {!isBeta && (
-          <Link to="/pricing" style={s.navCta}>Upgrade to Pro →</Link>
+          <Link to="/pricing" onClick={close} style={s.navCta} className="pc-nav-cta">Upgrade to Pro →</Link>
         )}
         {isBeta && (
-          <div style={s.betaPill}>
+          <div style={s.betaPill} className="pc-beta-pill">
             <span style={s.betaDot} />
             Beta access active
           </div>
@@ -40,6 +54,7 @@ const s = {
     backdropFilter: 'blur(10px)',
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
   },
+  hamburger: { background: 'none', border: 'none', cursor: 'pointer', padding: 4 },
   logoRow:  { display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' },
   logoMark: {
     width: 36, height: 36, background: '#1e1e1e', color: '#f5f1eb',
