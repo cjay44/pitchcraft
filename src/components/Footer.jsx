@@ -10,9 +10,11 @@ export default function Footer() {
         </div>
         <div style={s.tagline}>Craft it in seconds. Send it with confidence.</div>
         <nav style={s.links}>
-          <Link to="/"         style={s.link}>App</Link>
-          <Link to="/pricing"  style={s.link}>Pricing</Link>
-          <Link to="/feedback" style={s.link}>Beta Feedback</Link>
+          <Link to="/"           style={s.link}>App</Link>
+          <Link to="/dashboard"  style={s.link}>Dashboard</Link>
+          <Link to="/roadmap"    style={s.link}>Roadmap</Link>
+          <Link to="/pricing"    style={s.link}>Pricing</Link>
+          <Link to="/feedback"   style={s.link}>Beta Feedback</Link>
         </nav>
         <div style={s.meta}>© 2026 Pitchcraft · Built for freelance designers</div>
       </div>

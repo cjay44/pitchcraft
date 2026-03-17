@@ -5,6 +5,8 @@ import Footer from './components/Footer.jsx';
 import AppPage from './pages/AppPage.jsx';
 import PricingPage from './pages/PricingPage.jsx';
 import FeedbackPage from './pages/FeedbackPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
+import RoadmapPage from './pages/RoadmapPage.jsx';
 
 const BETA_CODE = 'CRAFT2026';
 
@@ -30,9 +32,11 @@ export default function App() {
         <div style={{ flex: 1 }}>
           <Routes>
             <Route path="/"         element={<AppPage      isBeta={isBeta} activateBeta={activateBeta} />} />
-            <Route path="/pricing"  element={<PricingPage  isBeta={isBeta} />} />
-            <Route path="/feedback" element={<FeedbackPage />} />
-            <Route path="*"         element={<Navigate to="/" replace />} />
+            <Route path="/pricing"   element={<PricingPage   isBeta={isBeta} />} />
+            <Route path="/feedback"  element={<FeedbackPage />} />
+            <Route path="/dashboard" element={<DashboardPage isBeta={isBeta} />} />
+            <Route path="/roadmap"   element={<RoadmapPage />} />
+            <Route path="*"          element={<Navigate to="/" replace />} />
           </Routes>
         </div>
         <Footer />

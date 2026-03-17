@@ -28,9 +28,11 @@ export default function Nav({ isBeta }) {
       </button>
 
       <nav style={s.nav} className={`pc-nav${menuOpen ? ' open' : ''}`}>
-        <Link to="/"        onClick={close} style={{ ...s.navLink, ...(pathname === "/"        ? s.navActive : {}) }}>App</Link>
-        <Link to="/pricing" onClick={close} style={{ ...s.navLink, ...(pathname === "/pricing" ? s.navActive : {}) }}>Pricing</Link>
-        <Link to="/feedback" onClick={close} style={{ ...s.navLink, ...(pathname === "/feedback" ? s.navActive : {}) }}>Feedback</Link>
+        <Link to="/"           onClick={close} style={{ ...s.navLink, ...(pathname === "/"           ? s.navActive : {}) }}>App</Link>
+        <Link to="/dashboard"  onClick={close} style={{ ...s.navLink, ...(pathname === "/dashboard"  ? s.navActive : {}) }}>Dashboard</Link>
+        <Link to="/roadmap"    onClick={close} style={{ ...s.navLink, ...(pathname === "/roadmap"    ? s.navActive : {}) }}>Roadmap</Link>
+        <Link to="/pricing"    onClick={close} style={{ ...s.navLink, ...(pathname === "/pricing"    ? s.navActive : {}) }}>Pricing</Link>
+        <Link to="/feedback"   onClick={close} style={{ ...s.navLink, ...(pathname === "/feedback"   ? s.navActive : {}) }}>Feedback</Link>
         {!isBeta && (
           <Link to="/pricing" onClick={close} style={s.navCta} className="pc-nav-cta">Upgrade to Pro →</Link>
         )}
