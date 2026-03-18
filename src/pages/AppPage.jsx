@@ -150,6 +150,56 @@ function UpgradeModal({ onClose }) {
   );
 }
 
+function BetaWelcomeModal({ onClose }) {
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleInterest = () => {
+    setSubmitted(true);
+    fetch('/api/pro-interest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ betaCode: 'CRAFT2026', submittedAt: new Date().toISOString() }),
+    }).catch(() => {});
+  };
+
+  return (
+    <div style={s.modalOverlay} onClick={onClose}>
+      <div style={{ ...s.modalCard, textAlign: 'left', padding: '36px 40px', maxWidth: 460, position: 'relative' }} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, color: '#a09488', cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</button>
+
+        {submitted ? (
+          <div style={{ textAlign: 'center', padding: '12px 0' }}>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#f0f7f4', color: '#2D6A4F', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>✓</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e', marginBottom: 12 }}>You're on the list!</div>
+            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>We'll be in touch when Pro launches. Your 50% discount is reserved.</div>
+            <button onClick={onClose} style={{ width: '100%', padding: '14px', background: '#1e1e1e', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Start crafting →</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2D6A4F', marginBottom: 10 }}>Welcome to the beta 🎉</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e', lineHeight: 1.3, marginBottom: 14 }}>Thank you for helping shape Pitchcraft</div>
+            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 0 }}>
+              You now have unlimited generations and no watermarks for the next 28 days. Nothing is set in stone yet — Pitchcraft is still being built, and your feedback directly shapes what we ship next.
+            </div>
+            <div style={{ borderTop: '1px solid #e8e2d8', margin: '20px 0' }} />
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#1e1e1e', marginBottom: 10 }}>Early access offer</div>
+            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 20 }}>
+              As a beta tester, you'll get 50% off Pro for your first 3 months when we launch. That's $14.50/month instead of $29 — locked in for life as long as you stay subscribed.
+            </div>
+            <button onClick={handleInterest} style={{ width: '100%', padding: '14px', background: '#2D6A4F', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
+              Yes, I'm interested in Pro →
+            </button>
+            <div style={{ fontSize: 11, color: '#a09488', textAlign: 'center', marginBottom: 12 }}>No commitment. We'll reach out when Pro is ready.</div>
+            <div style={{ textAlign: 'center' }}>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#a09488', fontSize: 12, cursor: 'pointer', padding: '4px 8px' }}>Maybe later</button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ToneSelector({ tone, setTone, loading }) {
   return (
     <div style={s.toneSelectorRow}>
@@ -196,8 +246,9 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [usage, setUsage]             = useState(getUsage);
-  const [betaInput, setBetaInput]     = useState('');
-  const [betaError, setBetaError]     = useState(false);
+  const [betaInput, setBetaInput]       = useState('');
+  const [betaError, setBetaError]       = useState(false);
+  const [showBetaWelcome, setShowBetaWelcome] = useState(false);
   const [tone, setTone]               = useState('professional');
   const outputRef   = useRef(null);
   const textareaRef = useRef(null);
@@ -235,8 +286,9 @@ export default function AppPage({ isBeta, activateBeta }) {
 
   const handleActivateBeta = () => {
     const success = activateBeta(betaInput);
-    if (!success) setBetaError(true);
-    else setBetaError(false);
+    if (!success) { setBetaError(true); return; }
+    setBetaError(false);
+    setShowBetaWelcome(true);
   };
 
   const effectiveLimit = isBeta ? 999 : FREE_LIMIT;
@@ -320,6 +372,7 @@ export default function AppPage({ isBeta, activateBeta }) {
     <div style={s.page}>
       <div style={s.bgTexture} />
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showBetaWelcome && <BetaWelcomeModal onClose={() => setShowBetaWelcome(false)} />}
 
       <main style={s.main} className="pc-main">
         {/* Hero */}
