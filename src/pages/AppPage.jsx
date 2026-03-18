@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const TABS = ['Proposal', 'Follow-Up', 'Invoice'];
 const MAX_NOTES = 500;
+const FREE_LIMIT = 10;
+const STORAGE_KEY = 'pc_usage';
 
 const TAB_ACCENTS = {
   'Proposal':  { bg: '#f0f7f4', border: '#b7ddd0', badge: '#2D6A4F', label: '#2D6A4F' },
@@ -9,10 +12,35 @@ const TAB_ACCENTS = {
   'Invoice':   { bg: '#fdf6ed', border: '#f5d9a8', badge: '#B45309', label: '#B45309' },
 };
 
+// ── Tone definitions ─────────────────────────────────────────────────────────
 const TONES = [
-  { id: 'friendly',     label: 'Friendly',     emoji: '😊', description: 'Warm and conversational', color: '#2D6A4F', bg: '#f0f7f4', border: '#b7ddd0' },
-  { id: 'professional', label: 'Professional', emoji: '💼', description: 'Polished and business-ready', color: '#1e1e1e', bg: '#f5f1eb', border: '#d5cec4' },
-  { id: 'bold',         label: 'Bold',         emoji: '⚡', description: 'Direct and punchy',         color: '#B45309', bg: '#fdf6ed', border: '#f5d9a8' },
+  {
+    id: 'friendly',
+    label: 'Friendly',
+    emoji: '😊',
+    description: 'Warm, conversational and approachable',
+    color: '#2D6A4F',
+    bg: '#f0f7f4',
+    border: '#b7ddd0',
+  },
+  {
+    id: 'professional',
+    label: 'Professional',
+    emoji: '💼',
+    description: 'Polished, confident and business-ready',
+    color: '#1e1e1e',
+    bg: '#f5f1eb',
+    border: '#d5cec4',
+  },
+  {
+    id: 'bold',
+    label: 'Bold',
+    emoji: '⚡',
+    description: 'Direct, punchy and memorable',
+    color: '#B45309',
+    bg: '#fdf6ed',
+    border: '#f5d9a8',
+  },
 ];
 
 const TONE_MODIFIERS = {
@@ -21,69 +49,115 @@ const TONE_MODIFIERS = {
   bold: `TONE — BOLD: Write with maximum confidence and minimum words. Short sentences. Active voice only. No hedging phrases like "I believe" or "I think" — state things as facts. The investment section especially should be unapologetic and direct. The client should feel a sense of energy and momentum reading this. Every word must earn its place. Cut anything that doesn't add force.`,
 };
 
+// ── System prompts ────────────────────────────────────────────────────────────
 const getSystemPrompt = (key, tone = 'professional') => {
   const toneInstruction = TONE_MODIFIERS[tone] || TONE_MODIFIERS.professional;
   const base = {
-    proposal: `You are an expert business writer who has written thousands of winning proposals for freelance designers. Your proposals feel personal, not templated — the client should feel like this was written specifically for them.
-Write a compelling project proposal for a freelance designer using the information provided. The proposal should make the client feel understood and confident in moving forward.
-STRUCTURE — use these five sections as plain capitalized headings on their own line:
+    proposal: `You are an expert business writer who has written thousands of winning proposals for freelance designers. Your proposals feel personal, structured and easy to scan — the client should feel this was written specifically for them.
+
+Write a compelling project proposal using the information provided. Format it for maximum readability — use clear headings with dividers, bullet points for deliverables, and a clean table layout for the investment breakdown.
+
+Use this exact structure:
+
 PROJECT OVERVIEW
-Summarise what the client is trying to achieve and why this project matters to their business. Reference the client by name and demonstrate you understand their context. Do not just restate what they told you — interpret it and show understanding.
+━━━━━━━━━━━━━━━━
+Write 2-3 sentences interpreting what the client wants to achieve and why it matters to their business. Reference the client by name. Show you understand their context — do not just restate the inputs.
+
 SCOPE OF WORK
-List the specific deliverables clearly. Be concrete and specific to the project type. Each deliverable should be a separate line. Do not use bullet characters — just one deliverable per line. Include revision rounds where appropriate.
+━━━━━━━━━━━━━
+List every deliverable on its own line starting with •. Be specific to the project type. Include revision rounds. Example:
+• Primary logo design (2 initial concept directions)
+• Brand colour palette with hex codes
+• Typography system with font pairing
+• Brand guidelines document (8-10 pages)
+• Final files in print and digital formats
+
 TIMELINE
-Give a realistic week-by-week or phase-based breakdown that matches the timeline provided. If no timeline is given, propose a sensible one based on the scope. End with a final delivery date or launch milestone.
+━━━━━━━━
+Break into phases or weeks, one per line starting with •. Match the timeline provided. Example:
+• Week 1-2    Discovery, research and initial concepts
+• Week 3      Client feedback and refinements
+• Week 4      Final artwork, file prep and delivery
+
 INVESTMENT
-State the total investment confidently. Do not apologise for the price. Frame it in terms of value delivered. If a budget is provided, use it. If not, write "Investment: To be confirmed following scope discussion." Include a brief note on payment terms (e.g. 50% upfront, 50% on completion). Never use the words "just" or "only" before a price.
+━━━━━━━━━━
+Use a two-column table layout — label on the left, value on the right, separated by multiple spaces. Never apologise for the price. Frame it as value. Example:
+Total         $[amount]
+Deposit       $[50%] due on project commencement
+Balance       $[50%] due on final delivery
+Payment       Bank transfer or credit card accepted
+
 NEXT STEPS
-Give one single clear action the client needs to take. For example: "To move forward, reply to confirm you're happy with this proposal and I'll send the contract and first invoice within 24 hours." Make it frictionless and specific — not vague like "get in touch."
-LENGTH: Scale to the scope. A small project under $1,500 needs 200-300 words. A mid-range project $1,500-$8,000 needs 300-400 words. A large project over $8,000 needs 400-500 words. Never pad, never truncate.
+━━━━━━━━━━
+One single specific action for the client. Make it frictionless and concrete. Example: "To confirm this proposal, simply reply to this email and I'll have the contract and deposit invoice with you within 24 hours."
+
+LENGTH: Scale to scope. Under $1,500: 250-320 words. $1,500-$8,000: 320-420 words. Over $8,000: 420-520 words.
+
 ${toneInstruction}
-CRITICAL: Output plain text only. No markdown whatsoever — no #, no **, no ___, no ---, no asterisks, no dashes as bullets. Section headings are plain capitalized text on their own line followed by one blank line.`,
-    followup: `You are an expert copywriter who writes follow-up emails for freelance designers. Your emails are short, human and never pushy — but they are strategically written to re-open conversations.
-Write a 3-email follow-up sequence for a proposal that has not received a response. Each email must feel completely different from the others — different angle, different energy, different reason to reply.
-EMAIL 1 — Day 3: The gentle nudge
-Strategy: assume good intent, they're probably just busy. Very short. Warm and light. Just checking it arrived.
-Subject line: specific to the project, not generic. E.g. "[Client name] — just checking in on the proposal"
-Body: 2-3 sentences maximum. Do not repeat anything from the proposal. Just acknowledge you sent it and invite a quick reply.
-EMAIL 2 — Day 7: The value-add
-Strategy: give them something useful before asking for anything. Add one small, specific insight relevant to their project type — a design consideration, a question that helps clarify scope, or a relevant observation about their industry. This makes you memorable and demonstrates expertise.
-Subject line: lead with the value, not the follow-up
-Body: 3-4 sentences. One sentence of value-add specific to their project type, one light callback to the proposal, one clear invitation to respond.
-EMAIL 3 — Day 14: The door-closer
-Strategy: create gentle natural scarcity without being aggressive. Your schedule is filling up. You want to give them first right of refusal before moving on. Leave the door open but make it clear this is the last nudge.
-Subject line: direct and honest
-Body: 3-4 sentences. Acknowledge this is your last follow-up. Mention your schedule is booking out. Tell them the door is still open. Wish them well regardless.
+
+CRITICAL FORMATTING RULES:
+- Every section heading must be ALL CAPS followed immediately by a ━━━ divider line (8+ characters)
+- Use • to start every bullet point
+- Use multiple spaces to create two-column alignment in the Investment section
+- No markdown (no #, no **, no ___)
+- Do not use the words "just" or "only" before a price`,
+
+    followup: `You are an expert copywriter who writes follow-up emails for freelance designers. Your emails are short, human and never pushy — but strategically written to re-open conversations.
+
+Write a 3-email follow-up sequence for a proposal that has not received a response. Each email must feel completely different — different angle, different energy, different reason to reply.
+
+Format each email clearly with these exact labels and structure:
+
+EMAIL 1 — DAY 3
+━━━━━━━━━━━━━━━
+Subject: [specific to the project, not generic]
+
+[body — 2-3 sentences max. Warm and light. Assume they're just busy. Just checking the proposal arrived. Do not repeat anything from the proposal.]
+
+EMAIL 2 — DAY 7
+━━━━━━━━━━━━━━━
+Subject: [lead with a value-add, not "following up"]
+
+[body — 3-4 sentences. Open with one specific insight relevant to their project type — a design consideration, a useful question, or a relevant observation. Then lightly reference the proposal and invite a response.]
+
+EMAIL 3 — DAY 14
+━━━━━━━━━━━━━━━━
+Subject: [direct and honest]
+
+[body — 3-4 sentences. This is the last nudge. Mention your schedule is booking out. Give them first right of refusal. Leave the door open. Wish them well regardless.]
+
 ${toneInstruction}
-Format each email exactly like this — label on its own line, then subject, then a blank line, then body:
-Email 1 — Day 3:
-Subject: [subject line]
-[body]
-CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
-    invoice: `You are an expert copywriter who writes invoice reminder emails for freelance designers. Your emails are professional and respectful, but they escalate clearly — being owed money is serious and the emails should reflect that without being rude.
-Write 3 invoice reminder emails that escalate in firmness. Always reference the project name and invoice amount in each email.
-REMINDER 1 — 3 Days Before Due: Friendly heads-up
-Tone: warm and helpful. Assume they'll pay without issue. Just making sure it's on their radar.
-Include: project name, invoice amount, due date, and how to pay.
-Subject: friendly, reference the invoice or project
-Body: 3 sentences. Mention the invoice, the amount, the due date, and how to pay. Keep it light.
-REMINDER 2 — 1 Week Overdue: Polite but firm
-Tone: professional and clear. No longer assuming an oversight — this needs attention. More direct than Reminder 1.
-Include: project name, exact amount owed, how many days overdue, payment details.
-Subject: clear that payment is now overdue
-Body: 4 sentences. Acknowledge the invoice is overdue. State the amount clearly. Provide payment details again. Ask them to confirm when payment will be made.
-REMINDER 3 — 2 Weeks Overdue: Final notice
-Tone: direct and serious. This is a final notice before further action. Professional but unambiguous. Do not soften this — even with a Friendly tone instruction, this email must be firm.
-Include: project name, total amount, days overdue.
-Subject: include the words "Final notice"
-Body: 4-5 sentences. State this is a final notice. Give the exact amount and days overdue. Note that if payment is not received within 5 business days you will need to pursue other options. Provide payment details one final time. Keep it factual, not emotional.
+
+CRITICAL: Output plain text only. No markdown, no **, no ##. Use the ━━━ dividers exactly as shown above.`,
+
+    invoice: `You are an expert copywriter who writes invoice reminder emails for freelance designers. Professional, respectful, but with clear escalation — being owed money is serious.
+
+Write 3 invoice reminder emails that escalate in firmness. Always reference the project name and invoice amount.
+
+Format each reminder clearly with these exact labels and structure:
+
+REMINDER 1 — 3 DAYS BEFORE DUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subject: [friendly, reference the invoice or project]
+
+[body — 3 sentences. Warm and helpful. Include project name, invoice amount, due date, and how to pay.]
+
+REMINDER 2 — 1 WEEK OVERDUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subject: [clear that payment is now overdue]
+
+[body — 4 sentences. Professional and firm. State the invoice is overdue, the exact amount, how many days past due, payment details, and ask for confirmation of when payment will be made.]
+
+REMINDER 3 — 2 WEEKS OVERDUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Subject: Final notice — [project name] invoice
+
+[body — 4-5 sentences. Direct and serious. State this is a final notice. Give exact amount and days overdue. Note that if payment is not received within 5 business days you will need to pursue other options. Provide payment details. Factual, not emotional. THIS EMAIL MUST BE FIRM regardless of the tone setting.]
+
 ${toneInstruction}
-Note on tone: The tone instruction applies to warmth and word choice in Reminders 1 and 2 only. Reminder 3 must always be firm and direct regardless of tone setting.
-Format each reminder exactly like this — label on its own line, then subject, then a blank line, then body:
-Reminder 1 — 3 Days Before Due:
-Subject: [subject line]
-[body]
-CRITICAL: Output plain text only. No markdown, no **, no ##, no ---.`,
+Note: tone applies to Reminders 1 and 2 only. Reminder 3 must always be firm and direct.
+
+CRITICAL: Output plain text only. No markdown, no **. Use the ━━━ dividers exactly as shown above.`,
   };
   return base[key];
 };
@@ -96,17 +170,124 @@ function buildUserPrompt(tab, form) {
   if (tab === 'Invoice')   return `Generate invoice reminder emails. Designer: ${designerName}, Client: ${clientName}, Project: ${projectType}, Amount: ${budget || 'as discussed'}.`;
 }
 
+function getUsage() {
+  try {
+    const raw = sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return 0;
+    const { count, month } = JSON.parse(raw);
+    const now = new Date();
+    return month === `${now.getFullYear()}-${now.getMonth()}` ? count : 0;
+  } catch { return 0; }
+}
+
+function incrementUsage() {
+  try {
+    const now = new Date();
+    const count = getUsage() + 1;
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ count, month: `${now.getFullYear()}-${now.getMonth()}` }));
+    return count;
+  } catch { return 0; }
+}
+
 function OutputRenderer({ text }) {
+  const lines = text.split('\n');
+  const elements = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Blank line — spacing
+    if (trimmed === '') {
+      elements.push(<div key={i} style={{ height: 10 }} />);
+      i++;
+      continue;
+    }
+
+    // Section divider ━━━ or ---
+    if (/^[━─=\-]{3,}$/.test(trimmed)) {
+      elements.push(<div key={i} style={s.outputDivider} />);
+      i++;
+      continue;
+    }
+
+    // ALL-CAPS heading
+    const isHeader = trimmed.length > 0 && trimmed.length < 60 &&
+      /^[A-Z][A-Z0-9\s\/\-\(\)]{2,}$/.test(trimmed) &&
+      !/^[A-Z][a-z]/.test(trimmed);
+    if (isHeader) {
+      elements.push(
+        <div key={i} style={s.outputHeading}>
+          <span style={s.outputHeadingText}>{trimmed}</span>
+          <div style={s.outputHeadingRule} />
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // Bullet point — starts with • or - or *
+    if (/^[•\-\*]\s/.test(trimmed)) {
+      const bulletText = trimmed.replace(/^[•\-\*]\s+/, '');
+      // Check for inline label: "Label    value" (2+ spaces or tab separator)
+      const tabMatch = bulletText.match(/^(.+?)\s{2,}(.+)$/);
+      if (tabMatch) {
+        elements.push(
+          <div key={i} style={s.outputTableRow}>
+            <span style={s.outputTableLabel}>{tabMatch[1]}</span>
+            <span style={s.outputTableValue}>{tabMatch[2]}</span>
+          </div>
+        );
+      } else {
+        elements.push(
+          <div key={i} style={s.outputBullet}>
+            <span style={s.outputBulletDot}>—</span>
+            <span style={s.outputBulletText}>{bulletText}</span>
+          </div>
+        );
+      }
+      i++;
+      continue;
+    }
+
+    // Table row — "Label    value" pattern (key-value with spacing)
+    const tableMatch = trimmed.match(/^([A-Za-z][A-Za-z\s\/\(\)]{1,24})\s{2,}(.+)$/);
+    if (tableMatch && !trimmed.startsWith(' ')) {
+      elements.push(
+        <div key={i} style={s.outputTableRow}>
+          <span style={s.outputTableLabel}>{tableMatch[1]}</span>
+          <span style={s.outputTableValue}>{tableMatch[2]}</span>
+        </div>
+      );
+      i++;
+      continue;
+    }
+
+    // Regular paragraph line
+    elements.push(<div key={i} style={s.outputLine}>{line}</div>);
+    i++;
+  }
+
+  return <div style={s.outputText}>{elements}</div>;
+}
+
+function UsageCounter({ used }) {
+  const remaining = Math.max(FREE_LIMIT - used, 0);
+  const pct = (used / FREE_LIMIT) * 100;
+  const color = remaining <= 2 ? '#c0392b' : remaining <= 5 ? '#B45309' : '#2D6A4F';
+  const bgColor = remaining <= 2 ? '#fdf0ef' : remaining <= 5 ? '#fdf6ed' : '#f0f7f4';
   return (
-    <div style={s.outputText}>
-      {text.split('\n').map((line, i) => {
-        const trimmed = line.trim();
-        const isHeader = trimmed.length > 0 && trimmed.length < 65 &&
-          (trimmed.endsWith(':') || /^[A-Z][A-Z\s\-\/]{4,}$/.test(trimmed));
-        if (trimmed === '') return <div key={i} style={{ height: 12 }} />;
-        if (isHeader)       return <div key={i} style={s.outputSectionHeader}>{trimmed}</div>;
-        return                     <div key={i} style={s.outputLine}>{line}</div>;
-      })}
+    <div style={{ ...s.usagePill, background: bgColor, borderColor: color + '33' }}>
+      <div style={s.usageBarTrack}>
+        <div style={{ ...s.usageBarFill, width: `${pct}%`, background: color }} />
+      </div>
+      <span style={{ ...s.usageText, color }}>
+        {remaining === 0 ? 'Limit reached — upgrade to continue' : `${remaining} of ${FREE_LIMIT} free generations remaining`}
+      </span>
+      {remaining <= 5 && remaining > 0 && (
+        <Link to="/pricing" style={{ ...s.usageUpgrade, color }}>Upgrade →</Link>
+      )}
     </div>
   );
 }
@@ -136,48 +317,161 @@ function SuccessToast({ show, tab }) {
   );
 }
 
-function BetaWelcomeModal({ onClose }) {
-  const [submitted, setSubmitted] = useState(false);
+function UpgradeModal({ onClose }) {
+  return (
+    <div style={s.modalOverlay} onClick={onClose}>
+      <div style={s.modalCard} onClick={e => e.stopPropagation()}>
+        <div style={s.modalIcon}>⚡</div>
+        <div style={s.modalTitle}>You've used all 10 free generations</div>
+        <div style={s.modalBody}>Upgrade to Pro for unlimited proposals, follow-ups, and invoice reminders — plus brand voice, PDF export, and more.</div>
+        <Link to="/pricing" style={s.modalCta} onClick={onClose}>See Pro plan — $29/month</Link>
+        <button style={s.modalDismiss} onClick={onClose}>Maybe later</button>
+      </div>
+    </div>
+  );
+}
 
-  const handleInterest = () => {
-    setSubmitted(true);
-    fetch('/api/pro-interest', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ betaCode: 'CRAFT2026', submittedAt: new Date().toISOString() }),
-    }).catch(() => {});
+
+// ── Send to Client Modal ──────────────────────────────────────────────────────
+function SendModal({ output, designerName, clientName, onClose }) {
+  const [to, setTo]                   = useState('');
+  const [subject, setSubject]         = useState(`Proposal from ${designerName}`);
+  const [note, setNote]               = useState('');
+  const [editedOutput, setEditedOutput] = useState(output);
+  const [sending, setSending]         = useState(false);
+  const [sent, setSent]               = useState(false);
+  const [error, setError]             = useState('');
+  const [activeTab, setActiveTab]     = useState('details'); // 'details' | 'edit'
+
+  const handleSend = async () => {
+    if (!to.trim() || !to.includes('@')) {
+      setError('Please enter a valid email address.');
+      setActiveTab('details');
+      return;
+    }
+    if (!editedOutput.trim()) {
+      setError('Proposal content cannot be empty.');
+      setActiveTab('edit');
+      return;
+    }
+    setError('');
+    setSending(true);
+    try {
+      const res = await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: to.trim(),
+          subject: subject.trim() || `Proposal from ${designerName}`,
+          proposalText: editedOutput,
+          designerName,
+          note: note.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send');
+      setSent(true);
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
     <div style={s.modalOverlay} onClick={onClose}>
-      <div style={{ ...s.modalCard, textAlign: 'left', padding: '36px 40px', maxWidth: 460, position: 'relative' }} onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', fontSize: 18, color: '#a09488', cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</button>
-
-        {submitted ? (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#f0f7f4', color: '#2D6A4F', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>✓</div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e', marginBottom: 12 }}>You're on the list!</div>
-            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 28 }}>We'll be in touch when Pro launches. Your 50% discount is reserved.</div>
-            <button onClick={onClose} style={{ width: '100%', padding: '14px', background: '#1e1e1e', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Start crafting →</button>
-          </div>
+      <div style={{ ...s.modalCard, maxWidth: 560, padding: '32px 36px' }} onClick={e => e.stopPropagation()}>
+        {sent ? (
+          <>
+            <div style={s.modalIcon}>✉️</div>
+            <div style={s.modalTitle}>Sent to {to}</div>
+            <div style={s.modalBody}>Your proposal is on its way. Follow up in 3 days if you haven't heard back.</div>
+            <button style={s.modalCta} onClick={onClose}>Done</button>
+          </>
         ) : (
           <>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2D6A4F', marginBottom: 10 }}>Welcome to the beta 🎉</div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e', lineHeight: 1.3, marginBottom: 14 }}>Thank you for helping shape Pitchcraft</div>
-            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 0 }}>
-              You now have unlimited generations and no watermarks for the next 28 days. Nothing is set in stone yet — Pitchcraft is still being built, and your feedback directly shapes what we ship next.
+            {/* Modal header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e' }}>Send to client</div>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#a09488', cursor: 'pointer', padding: 4 }}>✕</button>
             </div>
-            <div style={{ borderTop: '1px solid #e8e2d8', margin: '20px 0' }} />
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#1e1e1e', marginBottom: 10 }}>Early access offer</div>
-            <div style={{ fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 20 }}>
-              As a beta tester, you'll get 50% off Pro for your first 3 months when we launch. That's $14.50/month instead of $29 — locked in for life as long as you stay subscribed.
+
+            {/* Tab switcher */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #f0ebe3', paddingBottom: 16 }}>
+              {[['details', '📋 Details'], ['edit', '✏️ Edit proposal']].map(([key, label]) => (
+                <button key={key} onClick={() => setActiveTab(key)} style={{
+                  padding: '6px 16px', borderRadius: 100, border: '1.5px solid',
+                  borderColor: activeTab === key ? '#1e1e1e' : '#e8e2d8',
+                  background: activeTab === key ? '#1e1e1e' : 'transparent',
+                  color: activeTab === key ? '#fff' : '#8a7f72',
+                  fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+                }}>
+                  {label}
+                </button>
+              ))}
             </div>
-            <button onClick={handleInterest} style={{ width: '100%', padding: '14px', background: '#2D6A4F', color: '#fff', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 10 }}>
-              Yes, I'm interested in Pro →
+
+            {/* Details tab */}
+            {activeTab === 'details' && (
+              <>
+                <div style={s.sendField}>
+                  <label style={s.sendLabel}>Client email <span style={s.required}>*</span></label>
+                  <input value={to} onChange={e => { setTo(e.target.value); setError(''); }}
+                    placeholder="client@example.com" style={s.sendInput} />
+                </div>
+
+                <div style={s.sendField}>
+                  <label style={s.sendLabel}>Subject line</label>
+                  <input value={subject} onChange={e => setSubject(e.target.value)}
+                    placeholder={`Proposal from ${designerName}`} style={s.sendInput} />
+                </div>
+
+                <div style={s.sendField}>
+                  <label style={s.sendLabel}>
+                    Personal note <span style={{ color: '#a09488', fontWeight: 400 }}>(optional)</span>
+                  </label>
+                  <textarea value={note} onChange={e => setNote(e.target.value)}
+                    placeholder={`Hi ${clientName || 'there'}, great speaking with you — here's my proposal for the project...`}
+                    style={{ ...s.sendInput, minHeight: 90, resize: 'vertical', lineHeight: 1.6 }} />
+                </div>
+              </>
+            )}
+
+            {/* Edit proposal tab */}
+            {activeTab === 'edit' && (
+              <div style={s.sendField}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={s.sendLabel}>Proposal content</label>
+                  <button onClick={() => setEditedOutput(output)}
+                    style={{ fontSize: 11, color: '#a09488', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Reset to original
+                  </button>
+                </div>
+                <textarea
+                  value={editedOutput}
+                  onChange={e => setEditedOutput(e.target.value)}
+                  style={{ ...s.sendInput, minHeight: 320, resize: 'vertical', lineHeight: 1.75, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}
+                />
+                <div style={{ fontSize: 11, color: '#a09488', marginTop: 6 }}>
+                  Edit freely — your changes only apply to this email, the original is preserved above.
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div style={{ fontSize: 13, color: '#c0392b', background: '#fdf0ef', border: '1px solid #f5c6c0', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
+                {error}
+              </div>
+            )}
+
+            <button onClick={handleSend} disabled={sending}
+              style={{ ...s.generateBtn, ...(sending ? s.generateBtnDisabled : {}), marginTop: 4 }}>
+              {sending
+                ? <span style={s.loadingRow}><span style={s.spinner} />Sending...</span>
+                : `Send to ${to || 'client'} →`}
             </button>
-            <div style={{ fontSize: 11, color: '#a09488', textAlign: 'center', marginBottom: 12 }}>No commitment. We'll reach out when Pro is ready.</div>
-            <div style={{ textAlign: 'center' }}>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#a09488', fontSize: 12, cursor: 'pointer', padding: '4px 8px' }}>Maybe later</button>
+            <div style={{ fontSize: 11, color: '#a09488', textAlign: 'center', marginTop: 10 }}>
+              Arrives formatted and ready to read. Original output is always preserved here.
             </div>
           </>
         )}
@@ -186,31 +480,34 @@ function BetaWelcomeModal({ onClose }) {
   );
 }
 
+
+// ── Tone Selector ─────────────────────────────────────────────────────────────
 function ToneSelector({ tone, setTone, loading }) {
   return (
-    <div style={s.toneSelectorRow}>
-      <span style={s.toneLabel}>Tone</span>
-      <div style={s.tonePills}>
+    <div style={ts.wrap}>
+      <div style={ts.label}>Tone</div>
+      <div style={ts.pills}>
         {TONES.map(t => {
           const active = tone === t.id;
           return (
             <button
               key={t.id}
-              onClick={() => setTone(t.id)}
+              onClick={() => !loading && setTone(t.id)}
               disabled={loading}
               title={t.description}
               style={{
-                ...s.tonePill,
-                background:   active ? t.color : '#f5f1eb',
-                color:        active ? '#fff'   : '#5a5048',
-                borderColor:  active ? t.color  : '#e8e2d8',
-                boxShadow:    active ? `0 2px 8px ${t.color}40` : 'none',
-                opacity:      loading ? 0.5 : 1,
-                cursor:       loading ? 'not-allowed' : 'pointer',
+                ...ts.pill,
+                background: active ? t.color : '#faf8f5',
+                borderColor: active ? t.color : '#e8e2d8',
+                color: active ? '#fff' : '#6b6058',
+                transform: active ? 'translateY(-1px)' : 'translateY(0)',
+                boxShadow: active ? `0 4px 12px ${t.color}33` : 'none',
+                opacity: loading ? 0.5 : 1,
+                cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              <span>{t.emoji}</span>
-              <span>{t.label}</span>
+              <span style={{ fontSize: 14 }}>{t.emoji}</span>
+              <span style={{ fontWeight: active ? 600 : 400 }}>{t.label}</span>
             </button>
           );
         })}
@@ -219,36 +516,41 @@ function ToneSelector({ tone, setTone, loading }) {
   );
 }
 
+const ts = {
+  wrap:  { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' },
+  label: { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0 },
+  pills: { display: 'flex', gap: 8, flexWrap: 'wrap' },
+  pill:  {
+    display: 'flex', alignItems: 'center', gap: 6,
+    padding: '7px 16px', borderRadius: 100,
+    border: '1.5px solid', fontSize: 13,
+    fontFamily: "'DM Sans', sans-serif",
+    transition: 'all 0.18s ease',
+  },
+};
+
 export default function AppPage({ isBeta, activateBeta }) {
   const [activeTab, setActiveTab]     = useState('Proposal');
+  const [tone, setTone]               = useState('professional');
   const [form, setForm]               = useState({ designerName: '', clientName: '', projectType: '', budget: '', timeline: '', notes: '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [output, setOutput]           = useState('');
-  const [editedOutput, setEditedOutput] = useState('');
-  const [isEditing, setIsEditing]     = useState(false);
   const [loading, setLoading]         = useState(false);
   const [copied, setCopied]           = useState(false);
   const [globalError, setGlobalError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [betaInput, setBetaInput]       = useState('');
-  const [betaError, setBetaError]       = useState(false);
-  const [showBetaWelcome, setShowBetaWelcome] = useState(false);
-  const [tone, setTone]               = useState('professional');
-  const outputRef   = useRef(null);
-  const textareaRef = useRef(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const [usage, setUsage]             = useState(getUsage);
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [betaInput, setBetaInput]     = useState('');
+  const [betaError, setBetaError]     = useState(false);
+  const outputRef = useRef(null);
 
   useEffect(() => {
     if (output && outputRef.current) {
       outputRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [output]);
-
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-    }
-  }, [editedOutput]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -261,8 +563,6 @@ export default function AppPage({ isBeta, activateBeta }) {
     if (loading) return;
     setActiveTab(tab);
     setOutput('');
-    setEditedOutput('');
-    setIsEditing(false);
     setGlobalError('');
     setFieldErrors({});
     setShowSuccess(false);
@@ -270,12 +570,15 @@ export default function AppPage({ isBeta, activateBeta }) {
 
   const handleActivateBeta = () => {
     const success = activateBeta(betaInput);
-    if (!success) { setBetaError(true); return; }
-    setBetaError(false);
-    setShowBetaWelcome(true);
+    if (!success) setBetaError(true);
+    else setBetaError(false);
   };
 
+  const effectiveLimit = isBeta ? 999 : FREE_LIMIT;
+  const atLimit = usage >= effectiveLimit;
+
   const handleGenerate = async () => {
+    if (atLimit) { setShowUpgrade(true); return; }
     const errors = {};
     if (!form.designerName.trim()) errors.designerName = true;
     if (!form.clientName.trim())   errors.clientName   = true;
@@ -291,25 +594,28 @@ export default function AppPage({ isBeta, activateBeta }) {
     setShowSuccess(false);
     setLoading(true);
     const systemKey = activeTab === 'Proposal' ? 'proposal' : activeTab === 'Follow-Up' ? 'followup' : 'invoice';
+    const systemPrompt = getSystemPrompt(systemKey, tone);
     try {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-5',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
-          system: getSystemPrompt(systemKey, tone),
+          system: systemPrompt,
           messages: [{ role: 'user', content: buildUserPrompt(activeTab, form) }],
         }),
       });
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const data = await response.json();
       const text = data.content?.map(b => b.text || '').join('') || 'No response received.';
+      const newCount = incrementUsage();
+      setUsage(newCount);
       setOutput(text);
-      setEditedOutput(text);
-      setIsEditing(false);
+      setShowSendModal(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
+      if (newCount >= FREE_LIMIT && !isBeta) setTimeout(() => setShowUpgrade(true), 1500);
     } catch (err) {
       setGlobalError(!navigator.onLine
         ? 'No internet connection. Check your network and try again.'
@@ -320,7 +626,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   };
 
   const handleCopy = () => {
-    const text = editedOutput;
+    const text = output + (isBeta ? '' : '\n\n— Made with Pitchcraft (pitchcraft.io)');
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => fallbackCopy(text));
     } else { fallbackCopy(text); }
@@ -348,9 +654,10 @@ export default function AppPage({ isBeta, activateBeta }) {
   return (
     <div style={s.page}>
       <div style={s.bgTexture} />
-      {showBetaWelcome && <BetaWelcomeModal onClose={() => setShowBetaWelcome(false)} />}
+      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
+      {showSendModal && <SendModal output={output} designerName={form.designerName} clientName={form.clientName} onClose={() => setShowSendModal(false)} />}
 
-      <main style={s.main} className="pc-main">
+      <main style={s.main}>
         {/* Hero */}
         <div style={s.hero}>
           <h1 style={s.heroTitle}>Win more clients.<br />Less writing.</h1>
@@ -376,8 +683,11 @@ export default function AppPage({ isBeta, activateBeta }) {
           </div>
         )}
 
+        {/* Usage counter */}
+        {!isBeta && <UsageCounter used={usage} />}
+
         {/* Card */}
-        <div style={s.card} className="pc-card">
+        <div style={s.card}>
           <div style={s.tabRow}>
             {TABS.map(tab => (
               <button key={tab} onClick={() => handleTabSwitch(tab)} disabled={loading}
@@ -388,7 +698,7 @@ export default function AppPage({ isBeta, activateBeta }) {
           </div>
           <p style={s.tabDesc}>{tabDescriptions[activeTab]}</p>
 
-          <div style={s.formGrid} className="pc-form-grid">
+          <div style={s.formGrid}>
             {[
               { name: 'designerName', label: 'Your Name', placeholder: 'e.g. Sarah Chen', required: true },
               { name: 'clientName',   label: 'Client Name', placeholder: 'e.g. Bloom Studio', required: true },
@@ -426,11 +736,11 @@ export default function AppPage({ isBeta, activateBeta }) {
 
           <ToneSelector tone={tone} setTone={setTone} loading={loading} />
 
-          <button onClick={handleGenerate} disabled={loading}
-            style={{ ...s.generateBtn, ...(loading ? s.generateBtnDisabled : {}) }}>
+          <button onClick={handleGenerate} disabled={loading || atLimit}
+            style={{ ...s.generateBtn, ...(loading || atLimit ? s.generateBtnDisabled : {}) }}>
             {loading
               ? <span style={s.loadingRow}><span style={s.spinner} />Generating your {activeTab.toLowerCase()}...</span>
-              : `Generate ${activeTab}`}
+              : atLimit ? 'Upgrade to Pro to continue' : `Generate ${activeTab}`}
           </button>
         </div>
 
@@ -438,23 +748,23 @@ export default function AppPage({ isBeta, activateBeta }) {
 
         {output || loading ? (
           <div ref={outputRef} style={{ ...s.outputCard, borderTop: `3px solid ${accent.border}` }}>
-            <div style={{ ...s.outputHeaderRow, background: accent.bg }} className="pc-output-header">
+            <div style={{ ...s.outputHeaderRow, background: accent.bg }}>
               <div style={s.outputTitleRow}>
                 <span style={{ ...s.outputBadge, background: accent.badge }}>{activeTab}</span>
                 <span style={s.outputTitle}>Output</span>
               </div>
               {output && (
-                <div style={s.outputActions}>
-                  {editedOutput !== output && (
-                    <button onClick={() => setEditedOutput(output)} style={s.resetBtn}>Reset</button>
-                  )}
+                <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={handleCopy} style={{ ...s.copyBtn, color: copied ? accent.label : '#5a5048' }}>
                     {copied ? '✓ Copied!' : 'Copy'}
+                  </button>
+                  <button onClick={() => setShowSendModal(true)} style={s.sendBtn}>
+                    Send to client ✉
                   </button>
                 </div>
               )}
             </div>
-            <div style={s.outputBody} className="pc-output-body">
+            <div style={s.outputBody}>
               {loading ? (
                 <div style={s.skeleton}>
                   {[100, 85, 92, 70, 88, 60].map((w, i) => (
@@ -463,30 +773,37 @@ export default function AppPage({ isBeta, activateBeta }) {
                 </div>
               ) : (
                 <>
-                  <div style={s.editPromptBar}>
-                    <div style={s.editPromptLeft}>
-                      <span>✏️</span>
-                      <span style={s.editPromptText}>This is your draft — click to edit before you copy or send</span>
+                  <OutputRenderer text={output} />
+                  {!isBeta && (
+                    <div style={s.watermark}>
+                      Made with <Link to="/" style={s.watermarkLink}>Pitchcraft</Link> · Free plan ·{' '}
+                      <Link to="/pricing" style={s.watermarkLink}>Upgrade to remove</Link>
                     </div>
-                    <span style={{ fontSize: 12, color: isEditing ? '#2D6A4F' : '#a09488', fontWeight: isEditing ? 600 : 400 }}>
-                      {isEditing ? 'Editing...' : 'Click to edit'}
-                    </span>
-                  </div>
-                  <textarea
-                    ref={textareaRef}
-                    value={editedOutput}
-                    onChange={e => setEditedOutput(e.target.value)}
-                    onFocus={() => setIsEditing(true)}
-                    onBlur={() => setIsEditing(false)}
-                    rows={1}
-                    style={{ ...s.editableOutput, border: isEditing ? '1.5px solid #d5cec4' : 'none' }}
-                  />
+                  )}
                 </>
               )}
             </div>
           </div>
         ) : (
           <EmptyState tab={activeTab} />
+        )}
+
+        {/* Pricing teaser */}
+        {!isBeta && (
+          <div style={s.pricingTeaser}>
+            <div style={s.pricingTeaserInner}>
+              <div style={s.pricingTeaserLeft}>
+                <div style={s.pricingTeaserLabel}>Pitchcraft Pro</div>
+                <div style={s.pricingTeaserTitle}>Unlimited generations.<br />Your voice. Your brand.</div>
+                <div style={s.pricingTeaserBody}>Brand voice profile, 30-day history, PDF export, direct email send, and no watermark.</div>
+              </div>
+              <div style={s.pricingTeaserRight}>
+                <div style={s.pricingPrice}>$29<span style={s.pricingPeriod}>/mo</span></div>
+                <Link to="/pricing" style={s.pricingCta}>See Pro plan</Link>
+                <div style={s.pricingMeta}>No contracts · Cancel anytime</div>
+              </div>
+            </div>
+          </div>
         )}
       </main>
     </div>
@@ -509,6 +826,11 @@ const s = {
   betaInput: { flex: 1, minWidth: 120, padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e8e2d8', background: '#faf8f5', fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: 'none', letterSpacing: '0.06em' },
   betaBtn:   { padding: '7px 16px', borderRadius: 8, background: '#1e1e1e', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600 },
   betaErrMsg:{ fontSize: 11, color: '#c0392b', width: '100%' },
+  usagePill: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 12, border: '1.5px solid', marginBottom: 20, flexWrap: 'wrap' },
+  usageBarTrack: { width: 80, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 100, flexShrink: 0 },
+  usageBarFill:  { height: '100%', borderRadius: 100, transition: 'width 0.4s ease' },
+  usageText:     { fontSize: 13, fontWeight: 500, flex: 1 },
+  usageUpgrade:  { fontSize: 12, fontWeight: 700 },
   card:      { background: '#fff', borderRadius: 20, padding: '36px 40px', boxShadow: '0 2px 40px rgba(0,0,0,0.06)', marginBottom: 20 },
   tabRow:    { display: 'flex', gap: 8, marginBottom: 8 },
   tab:       { padding: '8px 20px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', color: '#8a7f72', fontSize: 14, fontWeight: 500 },
@@ -544,21 +866,33 @@ const s = {
   outputTitle:     { fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#1e1e1e' },
   copyBtn:         { padding: '7px 18px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', fontSize: 13, fontWeight: 500, transition: 'all 0.2s ease', cursor: 'pointer' },
   outputBody:      { padding: '28px 32px' },
-  outputActions:   { display: 'flex', alignItems: 'center', gap: 10 },
-  resetBtn:        { background: 'none', border: 'none', color: '#a09488', fontSize: 12, cursor: 'pointer', padding: '4px 8px' },
-  editPromptBar:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#faf8f5', border: '1.5px dashed #d5cec4', borderRadius: 8, padding: '10px 14px', marginBottom: 14 },
-  editPromptLeft:  { display: 'flex', alignItems: 'center', gap: 8 },
-  editPromptText:  { fontSize: 13, color: '#6b6058' },
-  editableOutput:  { width: '100%', height: 'auto', overflow: 'hidden', border: 'none', background: 'transparent', fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.8, color: '#1e1e1e', resize: 'none', outline: 'none', padding: '16px', boxSizing: 'border-box', borderRadius: 8, cursor: 'text', display: 'block' },
   outputText:      { fontFamily: "'DM Sans', sans-serif" },
   outputSectionHeader: { fontSize: 12, fontWeight: 700, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
   outputLine:      { fontSize: 14, lineHeight: 1.8, color: '#3a3028', fontWeight: 300 },
+  sendBtn: { padding: '7px 18px', borderRadius: 100, border: 'none', background: '#1e1e1e', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' },
+  sendField: { marginBottom: 16 },
+  sendLabel: { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'block', marginBottom: 6 },
+  sendInput: { width: '100%', padding: '11px 14px', borderRadius: 10, border: '1.5px solid #e8e2d8', background: '#faf8f5', fontSize: 14, color: '#1e1e1e', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' },
+  watermark:       { marginTop: 28, paddingTop: 16, borderTop: '1px solid #f0ebe3', fontSize: 12, color: '#b0a99a', textAlign: 'center' },
+  watermarkLink:   { color: '#8a7f72', fontWeight: 500, textDecoration: 'underline', textDecorationColor: '#d5cec4' },
   skeleton:        { display: 'flex', flexDirection: 'column', gap: 10 },
   skeletonLine:    { height: 14, background: 'linear-gradient(90deg, #f0ebe3 25%, #e8e2d8 50%, #f0ebe3 75%)', borderRadius: 4, animation: 'shimmer 1.4s ease infinite' },
+  pricingTeaser:   { background: '#1e1e1e', borderRadius: 20, padding: '40px' },
+  pricingTeaserInner: { display: 'flex', gap: 40, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
+  pricingTeaserLeft:  { flex: 1, minWidth: 200 },
+  pricingTeaserLabel: { fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#86efac', marginBottom: 10 },
+  pricingTeaserTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 24, color: '#fff', lineHeight: 1.25, marginBottom: 12 },
+  pricingTeaserBody:  { fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, fontWeight: 300 },
+  pricingTeaserRight: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0 },
+  pricingPrice:    { fontFamily: "'DM Serif Display', serif", fontSize: 48, color: '#fff', lineHeight: 1 },
+  pricingPeriod:   { fontSize: 18, color: 'rgba(255,255,255,0.5)', fontWeight: 300 },
+  pricingCta:      { background: '#fff', color: '#1e1e1e', borderRadius: 12, padding: '13px 28px', fontSize: 14, fontWeight: 700, display: 'block', textAlign: 'center' },
+  pricingMeta:     { fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' },
   modalOverlay:    { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard:       { background: '#fff', borderRadius: 24, padding: '48px 40px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' },
-  toneSelectorRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' },
-  toneLabel:       { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0 },
-  tonePills:       { display: 'flex', gap: 8, flexWrap: 'wrap' },
-  tonePill:        { display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 100, border: '1.5px solid', fontSize: 13, fontWeight: 600, transition: 'all 0.18s ease', fontFamily: "'DM Sans', sans-serif" },
+  modalIcon:       { fontSize: 36, marginBottom: 20 },
+  modalTitle:      { fontFamily: "'DM Serif Display', serif", fontSize: 24, color: '#1e1e1e', marginBottom: 14, lineHeight: 1.3 },
+  modalBody:       { fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 28 },
+  modalCta:        { display: 'block', background: '#1e1e1e', color: '#f5f1eb', borderRadius: 12, padding: '14px 24px', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'center' },
+  modalDismiss:    { background: 'transparent', border: 'none', color: '#a09488', fontSize: 13, cursor: 'pointer', width: '100%', padding: '8px' },
 };
