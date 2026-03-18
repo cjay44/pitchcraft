@@ -85,6 +85,12 @@ function UsageBreakdown({ detail }) {
           <div style={s.cardSub}>Which tools you've reached for most this session</div>
         </div>
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 20, padding: '8px 12px', background: '#fdf6ed', borderRadius: 8, border: '1px solid #f5d9a8' }}>
+        <span style={{ fontSize: 13 }}>ℹ️</span>
+        <span style={{ fontSize: 12, color: '#B45309', fontWeight: 400, lineHeight: 1.5 }}>
+          Stats reset when you close your browser. Persistent history launches with user accounts in Sprint 4.
+        </span>
+      </div>
       {total === 0 ? (
         <p style={s.emptyState}>No generations yet this session — head to the app to get started.</p>
       ) : (
@@ -222,7 +228,7 @@ export default function DashboardPage({ isBeta }) {
         <div style={s.hero}>
           <div style={s.heroLabel}>Your Dashboard</div>
           <h1 style={s.heroTitle}>Here's how you're going</h1>
-          <p style={s.heroSub}>Track your usage during the beta and see what's coming to help you win more clients.</p>
+          <p style={s.heroSub}>These stats reflect your current session only. Persistent tracking across sessions is coming in Sprint 4 when user accounts launch.</p>
         </div>
 
         {/* Beta banner */}
