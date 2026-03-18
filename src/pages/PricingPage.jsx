@@ -346,7 +346,7 @@ logoText: { fontFamily: "'Lora', serif", fontSize: 18, color: "#1e1e1e", fontWei
     whiteSpace: "nowrap",
   },
 
-  cardHeader: { marginBottom: 24, minHeight: 175 },
+  cardHeader: { marginBottom: 24, minHeight: 140 },
   tierName: {
     fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
     textTransform: "uppercase", marginBottom: 12,
