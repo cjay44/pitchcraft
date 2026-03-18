@@ -95,13 +95,36 @@ export default function FeedbackPage() {
   const totalCount = QUESTIONS.length;
   const pct = Math.round((completedCount / totalCount) * 100);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const required = QUESTIONS.filter(q => !answers[q.id]);
     if (required.length > 2) {
       alert("Please answer at least 8 of the 10 questions before submitting.");
       return;
     }
-    setSubmitted(true);
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email: '',
+          submittedAt: new Date().toISOString(),
+          outputQualityRating:      answers.q1 || null,
+          outputSoundsSendable:     answers.q2 || '',
+          proposalStructureRating:  answers.q3 || null,
+          proposalMissingElements:  answers.q4 || '',
+          uxFlowRating:             answers.q5 || null,
+          uxFrictionPoints:         answers.q6 || '',
+          wouldPay:                 answers.q7 || '',
+          whatWouldMakeThemPay:     answers.q8 || '',
+          npsRating:                answers.q9 || null,
+          topImprovement:           answers.q10 || '',
+        }),
+      });
+    } catch (_) {}
+    finally {
+      setSubmitted(true);
+    }
   };
 
   if (submitted) {

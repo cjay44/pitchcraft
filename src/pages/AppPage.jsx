@@ -467,8 +467,17 @@ export default function AppPage({ isBeta, activateBeta }) {
 
   const handleActivateBeta = () => {
     const success = activateBeta(betaInput);
-    if (!success) setBetaError(true);
-    else setBetaError(false);
+    if (!success) { setBetaError(true); return; }
+    setBetaError(false);
+    fetch('/api/register-beta', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        betaCode: 'CRAFT2026',
+        name: form.designerName || '',
+        email: '',
+      }),
+    }).catch(() => {});
   };
 
   const effectiveLimit = isBeta ? 999 : FREE_LIMIT;
