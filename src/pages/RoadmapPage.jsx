@@ -40,6 +40,7 @@ const PHASES = [
       { title: 'Direct email send',         tag: 'Pro', desc: 'Send proposals directly from Pitchcraft to your client\'s inbox.' },
       { title: 'Custom proposal templates', tag: 'Pro', desc: 'Save a structure you love and reuse it across projects.' },
       { title: 'Client profile saving',     tag: 'Pro', desc: 'Store client details so you never have to re-enter them.' },
+      { title: 'Know which proposals win',  tag: 'Pro', desc: 'Track open rates, acceptance and win rate across your proposals — so you can see exactly what\'s landing with clients and write sharper pitches every time.' },
     ],
   },
   {

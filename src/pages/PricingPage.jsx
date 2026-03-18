@@ -10,6 +10,7 @@ const PRO_FEATURES = [
   { icon: '🗂️', title: 'Custom templates',           body: 'Save your own proposal structures and reuse them across clients.' },
   { icon: '👤', title: 'Client profiles',            body: 'Store client details once, pre-fill every future generation.' },
   { icon: '∞',  title: 'Unlimited generations',     body: 'No caps, no monthly resets. Generate as much as you need.' },
+  { icon: '📊', title: 'Know which proposals win',  body: 'Track open rates, acceptance and win rate so you can see exactly what\'s working — and write better proposals every time.' },
 ];
 
 export default function PricingPage() {
