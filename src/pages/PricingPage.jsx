@@ -223,7 +223,7 @@ export default function PricingPage() {
           <div style={s.comingSoonInner}>
             <span style={s.comingSoonTag}>Coming soon</span>
             <div style={s.comingSoonTitle}>Agency plan — launching later in 2026</div>
-            <div style={s.comingSoonBody}>Team seats, agentic intake form connection, human-in-the-loop review queue, white-label output, and a CRM-lite pipeline. Built for design studios ready to scale. <span style={{fontWeight: 600, color: "#1e1e1e"}}>Join the waitlist →</span></div>
+            <div style={s.comingSoonBody}>Team seats, agentic intake form connection, human-in-the-loop review queue, white-label output, and a CRM-lite pipeline. Built for design studios ready to scale. <Link to="/feedback" style={{fontWeight: 600, color: "#1e1e1e", textDecoration: "underline", textDecorationColor: "#d5cec4"}}>Join the waitlist →</Link></div>
           </div>
         </div>
 
