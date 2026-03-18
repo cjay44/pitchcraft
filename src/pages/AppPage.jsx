@@ -191,85 +191,131 @@ function incrementUsage() {
 
 function OutputRenderer({ text }) {
   const lines = text.split('\n');
-  const elements = [];
+  const sections = [];
+  let currentSection = null;
   let i = 0;
-
   while (i < lines.length) {
     const line = lines[i];
     const trimmed = line.trim();
-
-    // Blank line — spacing
-    if (trimmed === '') {
-      elements.push(<div key={i} style={{ height: 10 }} />);
-      i++;
-      continue;
-    }
-
-    // Section divider ━━━ or ---
-    if (/^[━─=\-]{3,}$/.test(trimmed)) {
-      elements.push(<div key={i} style={s.outputDivider} />);
-      i++;
-      continue;
-    }
-
-    // ALL-CAPS heading
-    const isHeader = trimmed.length > 0 && trimmed.length < 60 &&
+    if (trimmed === '') { i++; continue; }
+    // Detect ALL-CAPS section heading
+    const isHeading = trimmed.length < 60 &&
       /^[A-Z][A-Z0-9\s\/\-\(\)]{2,}$/.test(trimmed) &&
       !/^[A-Z][a-z]/.test(trimmed);
-    if (isHeader) {
-      elements.push(
-        <div key={i} style={s.outputHeading}>
-          <span style={s.outputHeadingText}>{trimmed}</span>
-          <div style={s.outputHeadingRule} />
-        </div>
-      );
+    // Detect ━━━ or --- divider immediately after a heading
+    const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+    const isDivider = /^[━─=\-]{3,}$/.test(nextLine);
+    if (isHeading) {
+      currentSection = { type: 'section', heading: trimmed, items: [] };
+      sections.push(currentSection);
+      i++; // skip heading
+      if (isDivider) i++; // skip divider
+      continue;
+    }
+    if (!currentSection) {
+      currentSection = { type: 'section', heading: null, items: [] };
+      sections.push(currentSection);
+    }
+    // Detect divider line on its own
+    if (/^[━─=\-]{3,}$/.test(trimmed)) {
+      currentSection.items.push({ type: 'divider' });
       i++;
       continue;
     }
-
-    // Bullet point — starts with • or - or *
-    if (/^[•\-\*]\s/.test(trimmed)) {
-      const bulletText = trimmed.replace(/^[•\-\*]\s+/, '');
-      // Check for inline label: "Label    value" (2+ spaces or tab separator)
-      const tabMatch = bulletText.match(/^(.+?)\s{2,}(.+)$/);
-      if (tabMatch) {
-        elements.push(
-          <div key={i} style={s.outputTableRow}>
-            <span style={s.outputTableLabel}>{tabMatch[1]}</span>
-            <span style={s.outputTableValue}>{tabMatch[2]}</span>
-          </div>
-        );
+    // Detect bullet: starts with • or - followed by space
+    if (/^[•\-]\s/.test(trimmed)) {
+      const text = trimmed.replace(/^[•\-]\s+/, '');
+      // Detect timeline bullet: "• Week X  description" — tab/multiple spaces
+      const timelineMatch = text.match(/^(Week[s]?\s[\d\-–]+|Phase\s\d+|Day\s\d+)\s{2,}(.+)$/i);
+      if (timelineMatch) {
+        currentSection.items.push({ type: 'timeline', week: timelineMatch[1], task: timelineMatch[2] });
       } else {
-        elements.push(
-          <div key={i} style={s.outputBullet}>
-            <span style={s.outputBulletDot}>—</span>
-            <span style={s.outputBulletText}>{bulletText}</span>
-          </div>
-        );
+        currentSection.items.push({ type: 'bullet', text });
       }
       i++;
       continue;
     }
-
-    // Table row — "Label    value" pattern (key-value with spacing)
-    const tableMatch = trimmed.match(/^([A-Za-z][A-Za-z\s\/\(\)]{1,24})\s{2,}(.+)$/);
-    if (tableMatch && !trimmed.startsWith(' ')) {
-      elements.push(
-        <div key={i} style={s.outputTableRow}>
-          <span style={s.outputTableLabel}>{tableMatch[1]}</span>
-          <span style={s.outputTableValue}>{tableMatch[2]}</span>
-        </div>
-      );
+    // Detect investment table row: "Label    $value" or "Label    value"
+    const invMatch = trimmed.match(/^([A-Za-z][A-Za-z\s\/\(\)]{1,30})\s{2,}(\$[\d,]+.*|[\d,]+.*)$/);
+    if (invMatch) {
+      currentSection.items.push({ type: 'tablerow', label: invMatch[1], value: invMatch[2] });
       i++;
       continue;
     }
-
-    // Regular paragraph line
-    elements.push(<div key={i} style={s.outputLine}>{line}</div>);
+    // Regular paragraph text
+    currentSection.items.push({ type: 'text', text: trimmed });
     i++;
   }
-
-  return <div style={s.outputText}>{elements}</div>;
+  // Determine section type for smart rendering
+  const renderSection = (sec, idx) => {
+    const h = sec.heading ? sec.heading.toLowerCase() : '';
+    const hasTableRows = sec.items.some(it => it.type === 'tablerow');
+    const hasBullets = sec.items.some(it => it.type === 'bullet');
+    const hasTimeline = sec.items.some(it => it.type === 'timeline');
+    const isNextSteps = h.includes('next');
+    const isInvestment = h.includes('invest') || h.includes('price') || h.includes('fee');
+    return (
+      <div key={idx} style={s.docSection}>
+        {sec.heading && (
+          <div style={s.docSectionHeader}>
+            <span style={s.docSectionLabel}>{sec.heading}</span>
+            <div style={s.docSectionRule} />
+          </div>
+        )}
+        {isInvestment && hasTableRows ? (
+          <div style={s.invTable}>
+            {sec.items.filter(it => it.type === 'tablerow').map((it, j) => (
+              <div key={j} style={{ ...s.invRow, ...(j === 0 ? s.invRowTotal : {}) }}>
+                <span style={s.invLabel}>{it.label}</span>
+                <span style={{ ...s.invValue, ...(j === 0 ? s.invValueTotal : {}) }}>{it.value}</span>
+              </div>
+            ))}
+            {sec.items.filter(it => it.type === 'text').map((it, j) => (
+              <div key={'t' + j} style={s.invRow}>
+                <span style={{ ...s.invLabel, color: '#a09488' }}>{it.text}</span>
+              </div>
+            ))}
+          </div>
+        ) : hasTimeline ? (
+          <div style={s.timelineTable}>
+            {sec.items.filter(it => it.type === 'timeline').map((it, j) => (
+              <div key={j} style={{ ...s.timelineRow, ...(j === sec.items.filter(x => x.type === 'timeline').length - 1 ? { borderBottom: 'none' } : {}) }}>
+                <span style={s.timelineWeek}>{it.week}</span>
+                <span style={s.timelineTask}>{it.task}</span>
+              </div>
+            ))}
+          </div>
+        ) : isNextSteps ? (
+          <div style={s.nextStepsBox}>
+            {sec.items.filter(it => it.type === 'text' || it.type === 'bullet').map((it, j) => (
+              <p key={j} style={s.nextStepsText}>{it.text}</p>
+            ))}
+          </div>
+        ) : (
+          <>
+            {sec.items.map((it, j) => {
+              if (it.type === 'text')    return <p key={j} style={s.docBodyText}>{it.text}</p>;
+              if (it.type === 'divider') return <div key={j} style={s.docDivider} />;
+              if (it.type === 'bullet')  return (
+                <div key={j} style={s.docBulletRow}>
+                  <div style={s.docBulletDot} />
+                  <span style={s.docBulletText}>{it.text}</span>
+                </div>
+              );
+              if (it.type === 'tablerow') return (
+                <div key={j} style={s.docTableRow}>
+                  <span style={s.docTableLabel}>{it.label}</span>
+                  <span style={s.docTableValue}>{it.value}</span>
+                </div>
+              );
+              return null;
+            })}
+          </>
+        )}
+      </div>
+    );
+  };
+  return <div style={s.docRoot}>{sections.map(renderSection)}</div>;
 }
 
 function UsageCounter({ used }) {
@@ -865,10 +911,32 @@ const s = {
   outputBadge:     { color: '#fff', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', padding: '3px 10px', borderRadius: 100 },
   outputTitle:     { fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#1e1e1e' },
   copyBtn:         { padding: '7px 18px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', fontSize: 13, fontWeight: 500, transition: 'all 0.2s ease', cursor: 'pointer' },
-  outputBody:      { padding: '28px 32px' },
-  outputText:      { fontFamily: "'DM Sans', sans-serif" },
-  outputSectionHeader: { fontSize: 12, fontWeight: 700, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
-  outputLine:      { fontSize: 14, lineHeight: 1.8, color: '#3a3028', fontWeight: 300 },
+  outputBody:      { padding: '20px 24px' },
+  docRoot:         { fontFamily: "'DM Sans', sans-serif", padding: '4px 0' },
+  docSection:      { marginBottom: 24 },
+  docSectionHeader:{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 },
+  docSectionLabel: { fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#a09488', whiteSpace: 'nowrap' },
+  docSectionRule:  { flex: 1, height: '0.5px', background: '#e8e2d8' },
+  docBodyText:     { fontSize: 14, lineHeight: 1.8, color: '#1e1e1e', fontWeight: 400, marginBottom: 8 },
+  docDivider:      { height: '0.5px', background: '#e8e2d8', margin: '12px 0' },
+  docBulletRow:    { display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 7 },
+  docBulletDot:    { width: 5, height: 5, borderRadius: '50%', background: '#a09488', flexShrink: 0, marginTop: 8 },
+  docBulletText:   { fontSize: 14, lineHeight: 1.75, color: '#1e1e1e', fontWeight: 400 },
+  docTableRow:     { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '7px 0', borderBottom: '0.5px solid #f0ebe3' },
+  docTableLabel:   { fontSize: 13, color: '#6b6058', fontWeight: 500 },
+  docTableValue:   { fontSize: 14, color: '#1e1e1e', fontWeight: 500, textAlign: 'right' },
+  invTable:        { border: '1.5px solid #e8e2d8', borderRadius: 12, overflow: 'hidden' },
+  invRow:          { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderBottom: '1px solid #f0ebe3' },
+  invRowTotal:     { background: '#f5f1eb' },
+  invLabel:        { fontSize: 13, color: '#6b6058' },
+  invValue:        { fontSize: 14, color: '#1e1e1e', fontWeight: 500 },
+  invValueTotal:   { fontSize: 16, fontWeight: 700, color: '#1e1e1e' },
+  timelineTable:   { border: '1.5px solid #e8e2d8', borderRadius: 12, overflow: 'hidden' },
+  timelineRow:     { display: 'flex', gap: 16, alignItems: 'baseline', padding: '9px 16px', borderBottom: '1px solid #f0ebe3' },
+  timelineWeek:    { fontSize: 12, color: '#a09488', fontWeight: 600, minWidth: 80, flexShrink: 0 },
+  timelineTask:    { fontSize: 14, color: '#1e1e1e', lineHeight: 1.6 },
+  nextStepsBox:    { borderLeft: '3px solid #2D6A4F', paddingLeft: 16, background: '#f9fdf9', borderRadius: '0 8px 8px 0', padding: '14px 16px' },
+  nextStepsText:   { fontSize: 14, lineHeight: 1.75, color: '#1e1e1e', fontWeight: 400 },
   sendBtn: { padding: '7px 18px', borderRadius: 100, border: 'none', background: '#1e1e1e', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' },
   sendField: { marginBottom: 16 },
   sendLabel: { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'block', marginBottom: 6 },
