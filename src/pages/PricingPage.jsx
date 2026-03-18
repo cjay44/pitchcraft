@@ -13,7 +13,7 @@ const PRO_FEATURES = [
   { icon: '📊', title: 'Know which proposals win',  body: 'Track open rates, acceptance and win rate so you can see exactly what\'s working — and write better proposals every time.' },
 ];
 
-export default function PricingPage() {
+export default function PricingPage({ isBeta }) {
   const [email, setEmail]       = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -24,11 +24,12 @@ export default function PricingPage() {
     if (!email.trim()) { setError('Please enter your email.'); return; }
     setError('');
     setSubmitting(true);
+    const derivedName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     try {
       await fetch('/api/pro-interest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), betaCode: null, submittedAt: new Date().toISOString() }),
+        body: JSON.stringify({ name: derivedName, email: email.trim(), betaCode: isBeta ? 'CRAFT2026' : '', submittedAt: new Date().toISOString() }),
       });
       setSubmitted(true);
     } catch {

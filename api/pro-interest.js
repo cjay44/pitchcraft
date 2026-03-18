@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const apiKey = process.env.AIRTABLE_API_KEY;
   if (!apiKey) return res.status(200).json({ success: true }); // Silent fail — never block UI
 
-  const { email, betaCode, submittedAt } = req.body;
+  const { name, email, betaCode, submittedAt } = req.body;
   const BASE_ID          = 'apptiaDsYjQeRdueJ';
   const PRO_INTEREST_TBL = 'tblsMSJzWyrol6dPg';
   const BETA_TESTERS_TBL = 'tblJiLmXDqYE5yAoP';
@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         fields: {
+          'fldnLIVflTDOQWguT': name || email || 'Beta Tester',  // Name
           'fldEz9t3xGBHuf4P5': email || '',
           'fldGnquBbTIvM7YOd': submittedAt || new Date().toISOString(),
           'fldYySb8zxvC3XqNx': betaCode || 'CRAFT2026',
