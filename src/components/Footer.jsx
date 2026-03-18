@@ -5,7 +5,6 @@ export default function Footer() {
     <footer style={s.footer} className="pc-footer">
       <div style={s.inner}>
         <div style={s.logoRow}>
-          <div style={s.logoMark}>PC</div>
           <span style={s.logoText}>Pitchcraft</span>
         </div>
         <div style={s.tagline}>Craft it in seconds. Send it with confidence.</div>
