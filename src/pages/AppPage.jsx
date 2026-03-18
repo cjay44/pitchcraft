@@ -189,6 +189,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [fieldErrors, setFieldErrors] = useState({});
   const [output, setOutput]           = useState('');
   const [editedOutput, setEditedOutput] = useState('');
+  const [isEditing, setIsEditing]     = useState(false);
   const [loading, setLoading]         = useState(false);
   const [copied, setCopied]           = useState(false);
   const [globalError, setGlobalError] = useState('');
@@ -198,13 +199,21 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [betaInput, setBetaInput]     = useState('');
   const [betaError, setBetaError]     = useState(false);
   const [tone, setTone]               = useState('professional');
-  const outputRef = useRef(null);
+  const outputRef   = useRef(null);
+  const textareaRef = useRef(null);
 
   useEffect(() => {
     if (output && outputRef.current) {
       outputRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [output]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [editedOutput]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -218,6 +227,7 @@ export default function AppPage({ isBeta, activateBeta }) {
     setActiveTab(tab);
     setOutput('');
     setEditedOutput('');
+    setIsEditing(false);
     setGlobalError('');
     setFieldErrors({});
     setShowSuccess(false);
@@ -267,6 +277,7 @@ export default function AppPage({ isBeta, activateBeta }) {
       setUsage(newCount);
       setOutput(text);
       setEditedOutput(text);
+      setIsEditing(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
       if (newCount >= FREE_LIMIT && !isBeta) setTimeout(() => setShowUpgrade(true), 1500);
@@ -407,9 +418,14 @@ export default function AppPage({ isBeta, activateBeta }) {
                 <span style={s.outputTitle}>Output</span>
               </div>
               {output && (
-                <button onClick={handleCopy} style={{ ...s.copyBtn, color: copied ? accent.label : '#5a5048' }}>
-                  {copied ? '✓ Copied!' : 'Copy'}
-                </button>
+                <div style={s.outputActions}>
+                  {editedOutput !== output && (
+                    <button onClick={() => setEditedOutput(output)} style={s.resetBtn}>Reset</button>
+                  )}
+                  <button onClick={handleCopy} style={{ ...s.copyBtn, color: copied ? accent.label : '#5a5048' }}>
+                    {copied ? '✓ Copied!' : 'Copy'}
+                  </button>
+                </div>
               )}
             </div>
             <div style={s.outputBody} className="pc-output-body">
@@ -421,12 +437,23 @@ export default function AppPage({ isBeta, activateBeta }) {
                 </div>
               ) : (
                 <>
-                  <div style={s.editLabel}>✏️ Edit before sending</div>
+                  <div style={s.editPromptBar}>
+                    <div style={s.editPromptLeft}>
+                      <span>✏️</span>
+                      <span style={s.editPromptText}>This is your draft — click to edit before you copy or send</span>
+                    </div>
+                    <span style={{ fontSize: 12, color: isEditing ? '#2D6A4F' : '#a09488', fontWeight: isEditing ? 600 : 400 }}>
+                      {isEditing ? 'Editing...' : 'Click to edit'}
+                    </span>
+                  </div>
                   <textarea
+                    ref={textareaRef}
                     value={editedOutput}
                     onChange={e => setEditedOutput(e.target.value)}
-                    placeholder="Your generated content will appear here..."
-                    style={s.editableOutput}
+                    onFocus={() => setIsEditing(true)}
+                    onBlur={() => setIsEditing(false)}
+                    rows={1}
+                    style={{ ...s.editableOutput, border: isEditing ? '1.5px solid #d5cec4' : 'none' }}
                   />
                   {!isBeta && (
                     <div style={s.watermark}>
@@ -520,8 +547,12 @@ const s = {
   outputTitle:     { fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#1e1e1e' },
   copyBtn:         { padding: '7px 18px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', fontSize: 13, fontWeight: 500, transition: 'all 0.2s ease', cursor: 'pointer' },
   outputBody:      { padding: '28px 32px' },
-  editLabel:       { fontSize: 11, color: '#a09488', fontStyle: 'italic', marginBottom: 8 },
-  editableOutput:  { width: '100%', minHeight: 320, border: 'none', background: 'transparent', fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.8, color: '#1e1e1e', resize: 'vertical', outline: 'none', padding: 0, boxSizing: 'border-box' },
+  outputActions:   { display: 'flex', alignItems: 'center', gap: 10 },
+  resetBtn:        { background: 'none', border: 'none', color: '#a09488', fontSize: 12, cursor: 'pointer', padding: '4px 8px' },
+  editPromptBar:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#faf8f5', border: '1.5px dashed #d5cec4', borderRadius: 8, padding: '10px 14px', marginBottom: 14 },
+  editPromptLeft:  { display: 'flex', alignItems: 'center', gap: 8 },
+  editPromptText:  { fontSize: 13, color: '#6b6058' },
+  editableOutput:  { width: '100%', height: 'auto', overflow: 'hidden', border: 'none', background: 'transparent', fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.8, color: '#1e1e1e', resize: 'none', outline: 'none', padding: '16px', boxSizing: 'border-box', borderRadius: 8, cursor: 'text', display: 'block' },
   outputText:      { fontFamily: "'DM Sans', sans-serif" },
   outputSectionHeader: { fontSize: 12, fontWeight: 700, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
   outputLine:      { fontSize: 14, lineHeight: 1.8, color: '#3a3028', fontWeight: 300 },
