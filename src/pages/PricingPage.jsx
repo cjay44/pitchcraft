@@ -189,7 +189,7 @@ export default function PricingPage() {
                 </div>
 
                 {/* CTA */}
-                <div style={{ marginTop: 'auto' }}>
+                <div>
                   <button style={{
                     ...s.ctaBtn,
                     ...(tier.ctaStyle === "solid" ? { background: "#ffffff", color: "#1a2332", border: "2px solid #ffffff", fontWeight: 700 } : {}),
@@ -346,7 +346,7 @@ logoText: { fontFamily: "'Lora', serif", fontSize: 18, color: "#1e1e1e", fontWei
     whiteSpace: "nowrap",
   },
 
-  cardHeader: { marginBottom: 24 },
+  cardHeader: { marginBottom: 24, minHeight: 175 },
   tierName: {
     fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
     textTransform: "uppercase", marginBottom: 12,
