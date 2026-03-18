@@ -9,7 +9,6 @@ export default function Nav({ isBeta }) {
   return (
     <header style={s.header} className="pc-header">
       <Link to="/" style={s.logoRow} onClick={close}>
-        <div style={s.logoMark}>PC</div>
         <div>
           <div style={s.logoText}>Pitchcraft</div>
           <div style={s.logoSub} className="pc-logo-sub">For freelance designers · Australia</div>
