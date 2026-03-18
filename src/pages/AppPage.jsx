@@ -379,154 +379,6 @@ function UpgradeModal({ onClose }) {
 
 
 // ── Send to Client Modal ──────────────────────────────────────────────────────
-function SendModal({ output, designerName, clientName, onClose }) {
-  const [to, setTo]                   = useState('');
-  const [subject, setSubject]         = useState(`Proposal from ${designerName}`);
-  const [note, setNote]               = useState('');
-  const [editedOutput, setEditedOutput] = useState(output);
-  const [sending, setSending]         = useState(false);
-  const [sent, setSent]               = useState(false);
-  const [error, setError]             = useState('');
-  const [activeTab, setActiveTab]     = useState('details'); // 'details' | 'edit'
-
-  const handleSend = async () => {
-    if (!to.trim() || !to.includes('@')) {
-      setError('Please enter a valid email address.');
-      setActiveTab('details');
-      return;
-    }
-    if (!editedOutput.trim()) {
-      setError('Proposal content cannot be empty.');
-      setActiveTab('edit');
-      return;
-    }
-    setError('');
-    setSending(true);
-    try {
-      const res = await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: to.trim(),
-          subject: subject.trim() || `Proposal from ${designerName}`,
-          proposalText: editedOutput,
-          designerName,
-          note: note.trim(),
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send');
-      setSent(true);
-    } catch (err) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setSending(false);
-    }
-  };
-
-  return (
-    <div style={s.modalOverlay} onClick={onClose}>
-      <div style={{ ...s.modalCard, maxWidth: 560, padding: '32px 36px' }} onClick={e => e.stopPropagation()}>
-        {sent ? (
-          <>
-            <div style={s.modalIcon}>✉️</div>
-            <div style={s.modalTitle}>Sent to {to}</div>
-            <div style={s.modalBody}>Your proposal is on its way. Follow up in 3 days if you haven't heard back.</div>
-            <button style={s.modalCta} onClick={onClose}>Done</button>
-          </>
-        ) : (
-          <>
-            {/* Modal header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#1e1e1e' }}>Send to client</div>
-              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, color: '#a09488', cursor: 'pointer', padding: 4 }}>✕</button>
-            </div>
-
-            {/* Tab switcher */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid #f0ebe3', paddingBottom: 16 }}>
-              {[['details', '📋 Details'], ['edit', '✏️ Edit proposal']].map(([key, label]) => (
-                <button key={key} onClick={() => setActiveTab(key)} style={{
-                  padding: '6px 16px', borderRadius: 100, border: '1.5px solid',
-                  borderColor: activeTab === key ? '#1e1e1e' : '#e8e2d8',
-                  background: activeTab === key ? '#1e1e1e' : 'transparent',
-                  color: activeTab === key ? '#fff' : '#8a7f72',
-                  fontSize: 13, fontWeight: 500, fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
-                }}>
-                  {label}
-                </button>
-              ))}
-            </div>
-
-            {/* Details tab */}
-            {activeTab === 'details' && (
-              <>
-                <div style={s.sendField}>
-                  <label style={s.sendLabel}>Client email <span style={s.required}>*</span></label>
-                  <input value={to} onChange={e => { setTo(e.target.value); setError(''); }}
-                    placeholder="client@example.com" style={s.sendInput} />
-                </div>
-
-                <div style={s.sendField}>
-                  <label style={s.sendLabel}>Subject line</label>
-                  <input value={subject} onChange={e => setSubject(e.target.value)}
-                    placeholder={`Proposal from ${designerName}`} style={s.sendInput} />
-                </div>
-
-                <div style={s.sendField}>
-                  <label style={s.sendLabel}>
-                    Personal note <span style={{ color: '#a09488', fontWeight: 400 }}>(optional)</span>
-                  </label>
-                  <textarea value={note} onChange={e => setNote(e.target.value)}
-                    placeholder={`Hi ${clientName || 'there'}, great speaking with you — here's my proposal for the project...`}
-                    style={{ ...s.sendInput, minHeight: 90, resize: 'vertical', lineHeight: 1.6 }} />
-                </div>
-              </>
-            )}
-
-            {/* Edit proposal tab */}
-            {activeTab === 'edit' && (
-              <div style={s.sendField}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <label style={s.sendLabel}>Proposal content</label>
-                  <button onClick={() => setEditedOutput(output)}
-                    style={{ fontSize: 11, color: '#a09488', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>
-                    Reset to original
-                  </button>
-                </div>
-                <textarea
-                  value={editedOutput}
-                  onChange={e => setEditedOutput(e.target.value)}
-                  style={{ ...s.sendInput, minHeight: 320, resize: 'vertical', lineHeight: 1.75, fontSize: 13, fontFamily: "'DM Sans', sans-serif" }}
-                />
-                <div style={{ fontSize: 11, color: '#a09488', marginTop: 6 }}>
-                  Edit freely — your changes only apply to this email, the original is preserved above.
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <div style={{ fontSize: 13, color: '#c0392b', background: '#fdf0ef', border: '1px solid #f5c6c0', borderRadius: 8, padding: '10px 14px', marginBottom: 16 }}>
-                {error}
-              </div>
-            )}
-
-            <button onClick={handleSend} disabled={sending}
-              style={{ ...s.generateBtn, ...(sending ? s.generateBtnDisabled : {}), marginTop: 4 }}>
-              {sending
-                ? <span style={s.loadingRow}><span style={s.spinner} />Sending...</span>
-                : `Send to ${to || 'client'} →`}
-            </button>
-            <div style={{ fontSize: 11, color: '#a09488', textAlign: 'center', marginTop: 10 }}>
-              Arrives formatted and ready to read. Original output is always preserved here.
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
 // ── Tone Selector ─────────────────────────────────────────────────────────────
 function ToneSelector({ tone, setTone, loading }) {
   return (
@@ -587,7 +439,6 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [usage, setUsage]             = useState(getUsage);
-  const [showSendModal, setShowSendModal] = useState(false);
   const [betaInput, setBetaInput]     = useState('');
   const [betaError, setBetaError]     = useState(false);
   const outputRef = useRef(null);
@@ -658,7 +509,6 @@ export default function AppPage({ isBeta, activateBeta }) {
       const newCount = incrementUsage();
       setUsage(newCount);
       setOutput(text);
-      setShowSendModal(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
       if (newCount >= FREE_LIMIT && !isBeta) setTimeout(() => setShowUpgrade(true), 1500);
@@ -701,7 +551,6 @@ export default function AppPage({ isBeta, activateBeta }) {
     <div style={s.page}>
       <div style={s.bgTexture} />
       {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
-      {showSendModal && <SendModal output={output} designerName={form.designerName} clientName={form.clientName} onClose={() => setShowSendModal(false)} />}
 
       <main style={s.main}>
         {/* Hero */}
@@ -800,14 +649,9 @@ export default function AppPage({ isBeta, activateBeta }) {
                 <span style={s.outputTitle}>Output</span>
               </div>
               {output && (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={handleCopy} style={{ ...s.copyBtn, color: copied ? accent.label : '#5a5048' }}>
-                    {copied ? '✓ Copied!' : 'Copy'}
-                  </button>
-                  <button onClick={() => setShowSendModal(true)} style={s.sendBtn}>
-                    Send to client ✉
-                  </button>
-                </div>
+                <button onClick={handleCopy} style={{ ...s.copyBtn, color: copied ? accent.label : '#5a5048' }}>
+                  {copied ? '✓ Copied!' : 'Copy'}
+                </button>
               )}
             </div>
             <div style={s.outputBody}>
@@ -937,10 +781,6 @@ const s = {
   timelineTask:    { fontSize: 14, color: '#1e1e1e', lineHeight: 1.6 },
   nextStepsBox:    { borderLeft: '3px solid #2D6A4F', paddingLeft: 16, background: '#f9fdf9', borderRadius: '0 8px 8px 0', padding: '14px 16px' },
   nextStepsText:   { fontSize: 14, lineHeight: 1.75, color: '#1e1e1e', fontWeight: 400 },
-  sendBtn: { padding: '7px 18px', borderRadius: 100, border: 'none', background: '#1e1e1e', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' },
-  sendField: { marginBottom: 16 },
-  sendLabel: { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'block', marginBottom: 6 },
-  sendInput: { width: '100%', padding: '11px 14px', borderRadius: 10, border: '1.5px solid #e8e2d8', background: '#faf8f5', fontSize: 14, color: '#1e1e1e', fontFamily: "'DM Sans', sans-serif", outline: 'none', transition: 'border-color 0.15s ease', boxSizing: 'border-box' },
   watermark:       { marginTop: 28, paddingTop: 16, borderTop: '1px solid #f0ebe3', fontSize: 12, color: '#b0a99a', textAlign: 'center' },
   watermarkLink:   { color: '#8a7f72', fontWeight: 500, textDecoration: 'underline', textDecorationColor: '#d5cec4' },
   skeleton:        { display: 'flex', flexDirection: 'column', gap: 10 },
