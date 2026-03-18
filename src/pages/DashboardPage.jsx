@@ -86,7 +86,7 @@ function UsageBreakdown({ detail }) {
         </div>
       </div>
       {total === 0 ? (
-        <p style={s.emptyState}>No generations yet this session — head to the app to get started.</p>
+        <p style={s.emptyState}>No generations yet this session — <Link to="/" style={{ color: '#1e1e1e', fontWeight: 600 }}>start crafting now</Link>.</p>
       ) : (
         <div style={s.breakdownList}>
           {rows.map(r => (
