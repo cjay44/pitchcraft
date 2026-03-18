@@ -1,411 +1,158 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-
-const FREE_FEATURES = [
-  { text: "10 generations per month", sub: "Shared across all 3 tools" },
-  { text: "Proposal Generator" },
-  { text: "Follow-Up Email Sequence" },
-  { text: "Invoice Reminder Emails" },
-  { text: "Copy to clipboard" },
-  { text: "Plain text output" },
-];
-
-const FREE_RESTRICTIONS = [
-  { text: "No saved history" },
-  { text: "No brand voice profile" },
-  { text: "No integrations" },
-  { text: '"Made with Pitchcraft" watermark' },
-];
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const PRO_FEATURES = [
-  { text: "Unlimited generations", sub: "Across all tools, forever" },
-  { text: "Brand voice profile", sub: "Your tone, saved & reused" },
-  { text: "30-day output history", sub: "Searchable and revisitable" },
-  { text: "PDF export", sub: "Ready-to-send formatted proposals" },
-  { text: "Direct email send", sub: "Via SendGrid integration" },
-  { text: "Custom proposal templates" },
-  { text: "Client profile saving" },
-  { text: "Priority support" },
-  { text: "No watermark" },
+  { icon: '🎙️', title: 'Brand voice profile',      body: 'Save your tone and style — every output sounds unmistakably you.' },
+  { icon: '📂', title: '30-day output history',     body: 'Revisit and reuse every proposal, follow-up, and invoice you\'ve generated.' },
+  { icon: '📄', title: 'PDF export',                body: 'Download ready-to-send, formatted proposals in one click.' },
+  { icon: '✉️', title: 'Direct email send',          body: 'Send straight from Pitchcraft via SendGrid — no copy-paste required.' },
+  { icon: '⚡', title: 'Streaming output',           body: 'Watch your content generate in real time, word by word.' },
+  { icon: '🗂️', title: 'Custom templates',           body: 'Save your own proposal structures and reuse them across clients.' },
+  { icon: '👤', title: 'Client profiles',            body: 'Store client details once, pre-fill every future generation.' },
+  { icon: '∞',  title: 'Unlimited generations',     body: 'No caps, no monthly resets. Generate as much as you need.' },
 ];
-
-const TIERS = [
-  {
-    id: "free",
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    tagline: "For freelancers just getting started",
-    cta: "Start for free",
-    ctaStyle: "outline",
-    accent: "#6B6058",
-    accentLight: "#f5f1eb",
-    badge: null,
-    features: FREE_FEATURES,
-    restrictions: FREE_RESTRICTIONS,
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$29",
-    period: "per month",
-    tagline: "For established freelancers winning consistent work",
-    cta: "Start Pro",
-    ctaStyle: "solid",
-    accent: "#2d3f55",
-    accentLight: "#f0f0ee",
-    badge: "Best plan",
-    features: PRO_FEATURES,
-    restrictions: [],
-  }
-];
-
-function Check({ color }) {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-      <circle cx="7.5" cy="7.5" r="7.5" fill={color} fillOpacity="0.12" />
-      <path d="M4.5 7.5L6.5 9.5L10.5 5.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Cross() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" style={{ flexShrink: 0, marginTop: 2 }}>
-      <circle cx="7.5" cy="7.5" r="7.5" fill="#D5CEC4" fillOpacity="0.4" />
-      <path d="M5.5 5.5L9.5 9.5M9.5 5.5L5.5 9.5" stroke="#A09488" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function FeatureItem({ text, sub, accent, restricted, darkCard }) {
-  return (
-    <div style={{ display: "flex", gap: 10, padding: "12px 0", borderBottom: `1px solid ${darkCard ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}` }}>
-      {restricted ? <Cross /> : <Check color={accent} />}
-      <div>
-        <div style={{
-          fontSize: 14,
-          color: restricted ? (darkCard ? "rgba(255,255,255,0.35)" : "#A09488") : (darkCard ? "#ffffff" : "#1e1e1e"),
-          fontWeight: restricted ? 400 : 500,
-          textDecoration: restricted ? "line-through" : "none",
-          fontFamily: "'Lora', serif",
-        }}>{text}</div>
-        {sub && !restricted && (
-          <div style={{ fontSize: 11, color: darkCard ? "rgba(255,255,255,0.55)" : "#8a7f72", marginTop: 1, fontFamily: "'DM Sans', sans-serif" }}>{sub}</div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(false);
-  const [hovered, setHovered] = useState(null);
+  const [email, setEmail]       = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]       = useState('');
 
-  const getPrice = (tier) => {
-    if (tier.price === "$0") return "$0";
-    const num = parseInt(tier.price.replace("$", ""));
-    return annual ? `$${Math.round(num * 0.8)}` : tier.price;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email.trim()) { setError('Please enter your email.'); return; }
+    setError('');
+    setSubmitting(true);
+    try {
+      await fetch('/api/pro-interest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), betaCode: null, submittedAt: new Date().toISOString() }),
+      });
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div style={s.page}>
-      {/* Header */}
-<main style={s.main} className="pc-pricing-main">
+      <main style={s.main}>
 
         {/* Hero */}
-        <div style={s.hero} className="pc-hero">
-          <div style={s.eyebrow}>Simple, transparent pricing</div>
-          <h1 style={s.heroTitle}>
-            Pay for what<br />
-            <em style={s.heroItalic}>you actually use.</em>
-          </h1>
+        <div style={s.hero}>
+          <div style={s.eyebrow}>Pitchcraft Pro</div>
+          <h1 style={s.heroTitle}>More power.<br /><em style={s.heroItalic}>When you're ready.</em></h1>
           <p style={s.heroSub}>
-            Start free. Upgrade when you're ready.<br />
-            No contracts. Cancel anytime.
+            Pro is in active development — shaped by feedback from beta testers like you.
+            When it launches, beta users get <strong>50% off their first 3 months</strong>.
           </p>
-
-          {/* Billing toggle */}
-          <div style={s.toggleRow}>
-            <span style={{ ...s.toggleLabel, color: !annual ? "#1e1e1e" : "#a09488" }}>Monthly</span>
-            <button
-              onClick={() => setAnnual(!annual)}
-              style={{ ...s.toggleTrack, background: annual ? "#1e1e1e" : "#d5cec4" }}
-              aria-label="Toggle annual billing"
-            >
-              <span style={{ ...s.toggleThumb, transform: annual ? "translateX(20px)" : "translateX(2px)" }} />
-            </button>
-            <span style={{ ...s.toggleLabel, color: annual ? "#1e1e1e" : "#a09488" }}>
-              Annual
-              <span style={s.saveBadge}>Save 20%</span>
-            </span>
-          </div>
         </div>
 
-        {/* Pricing cards */}
-        <div style={s.cardsRow} className="pc-cards-row">
-          {TIERS.map((tier, idx) => {
-            const isHovered = hovered === tier.id;
-            const isPro = tier.id === "pro";
-            return (
-              <div
-                key={tier.id}
-                onMouseEnter={() => setHovered(tier.id)}
-                onMouseLeave={() => setHovered(null)}
-                className="pc-pricing-card"
-              style={{
-                  ...s.card,
-                  ...(isPro ? s.cardFeatured : {}),
-                  borderColor: isPro ? "#3d5470" : isHovered ? "#c5bdb3" : "#e8e2d8",
-                  transform: isPro ? "translateY(-8px)" : isHovered ? "translateY(-4px)" : "translateY(0)",
-                  boxShadow: isPro
-                    ? "0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.08)"
-                    : isHovered
-                    ? "0 12px 40px rgba(0,0,0,0.08)"
-                    : "0 2px 20px rgba(0,0,0,0.05)",
-                  animationDelay: `${idx * 0.1}s`,
-                }}
-              >
-                {/* Badge */}
-                {tier.badge && (
-                  <div style={{ ...s.badge, background: isPro ? "#ffffff" : tier.accent, color: isPro ? "#1a2332" : "#ffffff" }}>
-                    {tier.badge}
-                  </div>
-                )}
-
-                {/* Tier header */}
-                <div style={s.cardHeader}>
-                  <div style={{ ...s.tierName, color: isPro ? "rgba(255,255,255,0.55)" : tier.accent }}>{tier.name}</div>
-                  <div style={s.priceRow}>
-                    <span style={{ ...s.price, color: isPro ? "#ffffff" : "#1e1e1e" }}>{getPrice(tier)}</span>
-                    <span style={{ ...s.pricePeriod, color: isPro ? "rgba(255,255,255,0.7)" : "#8a7f72" }}>/ {annual && tier.price !== "$0" ? "mo, billed annually" : tier.period}</span>
-                  </div>
-                  {annual && tier.price !== "$0" && (
-                    <div style={{ fontSize: 11, color: isPro ? "#86efac" : "#2D6A4F", fontWeight: 600, marginTop: 4 }}>
-                      You save ${Math.round(parseInt(tier.price.replace("$","")) * 12 * 0.2)}/year
-                    </div>
-                  )}
-                  <p style={{ ...s.tagline, color: isPro ? "rgba(255,255,255,0.75)" : "#8a7f72" }}>{tier.tagline}</p>
-                </div>
-
-                {/* CTA */}
-                <div>
-                  <button style={{
-                    ...s.ctaBtn,
-                    ...(tier.ctaStyle === "solid" ? { background: "#ffffff", color: "#1a2332", border: "2px solid #ffffff", fontWeight: 700 } : {}),
-                    ...(tier.ctaStyle === "outline" ? { background: "transparent", color: "#1e1e1e", border: "1.5px solid #d5cec4" } : {}),
-                    ...(tier.ctaStyle === "accent" ? { background: tier.accent, color: "#fff", border: "none" } : {}),
-                  }}>
-                    {tier.cta}
-                  </button>
-                </div>
-
-                {/* Divider */}
-                <div style={{ ...s.divider, borderColor: isPro ? "rgba(255,255,255,0.15)" : "#f0ebe3" }} />
-
-                {/* Features */}
-                <div style={s.featureList}>
-                  {tier.features.map((f, i) => (
-                    <FeatureItem key={i} text={f.text} sub={f.sub} accent={isPro ? "#ffffff" : tier.accent} darkCard={isPro} />
-                  ))}
-                  {tier.restrictions.map((f, i) => (
-                    <FeatureItem key={`r${i}`} text={f.text} accent={tier.accent} restricted darkCard={isPro} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-
-        {/* Coming soon teaser */}
-        <div style={s.comingSoon} className="pc-coming-soon">
-          <div style={s.comingSoonInner}>
-            <span style={s.comingSoonTag}>Coming soon</span>
-            <div style={s.comingSoonTitle}>Agency plan — launching later in 2026</div>
-            <div style={s.comingSoonBody}>Team seats, agentic intake form connection, human-in-the-loop review queue, white-label output, and a CRM-lite pipeline. Built for design studios ready to scale. <Link to="/feedback" style={{fontWeight: 600, color: "#1e1e1e", textDecoration: "underline", textDecorationColor: "#d5cec4"}}>Join the waitlist →</Link></div>
-          </div>
-        </div>
-
-        {/* FAQ strip */}
-        <div style={s.faqRow} className="pc-faq-row">
-          {[
-            { q: "Can I change plans anytime?", a: "Yes — upgrade, downgrade, or cancel anytime. No lock-in." },
-            { q: "What counts as a generation?", a: "Each proposal, follow-up sequence, or invoice reminder is one generation." },
-            { q: "Is the watermark visible to clients?", a: "Yes, on free plans. A small footer line reads 'Made with Pitchcraft'." },
-            { q: "Do unused generations roll over?", a: "No — the 10 free generations reset on the 1st of each month." },
-          ].map((item, i) => (
-            <div key={i} style={s.faqItem}>
-              <div style={s.faqQ}>{item.q}</div>
-              <div style={s.faqA}>{item.a}</div>
+        {/* Feature grid */}
+        <div style={s.featureGrid}>
+          {PRO_FEATURES.map((f, i) => (
+            <div key={i} style={s.featureCard}>
+              <div style={s.featureIcon}>{f.icon}</div>
+              <div style={s.featureTitle}>{f.title}</div>
+              <div style={s.featureBody}>{f.body}</div>
             </div>
           ))}
         </div>
 
+        {/* Pricing card */}
+        <div style={s.pricingCard}>
+          <div style={s.pricingBadge}>Coming soon</div>
+          <div style={s.pricingName}>Pitchcraft Pro</div>
+          <div style={s.pricingPriceRow}>
+            <span style={s.pricingAmount}>$29</span>
+            <span style={s.pricingPeriod}>/month</span>
+          </div>
+          <div style={s.pricingAnnual}>or $278/year — save $70</div>
+          <div style={s.pricingNote}>
+            We're building Pro carefully so it's genuinely worth paying for.
+            No launch date yet — but it's coming, and beta testers get first access at half price.
+          </div>
+
+          {/* Email capture */}
+          {submitted ? (
+            <div style={s.successState}>
+              <div style={s.successIcon}>✓</div>
+              <div style={s.successTitle}>You're on the list!</div>
+              <div style={s.successBody}>We'll email you the moment Pro is ready — with your 50% discount code waiting.</div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={s.form}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
+                placeholder="your@email.com"
+                style={s.emailInput}
+              />
+              <button type="submit" disabled={submitting} style={{ ...s.submitBtn, ...(submitting ? s.submitBtnDisabled : {}) }}>
+                {submitting ? 'Saving...' : 'Notify me when Pro launches →'}
+              </button>
+              {error && <div style={s.formError}>{error}</div>}
+              <div style={s.formMeta}>No commitment. No spam. Just a heads-up when it's ready.</div>
+            </form>
+          )}
+        </div>
+
+        {/* Beta reassurance */}
+        <div style={s.betaNote}>
+          <span style={s.betaDot} />
+          <span>
+            Already a beta tester? You have full access to everything right now — unlimited generations, no watermarks.{' '}
+            <Link to="/" style={s.betaLink}>Get back to the app →</Link>
+          </span>
+        </div>
+
       </main>
-<style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=DM+Sans:wght@300;400;500;600&display=swap');
-      `}</style>
     </div>
   );
 }
 
 const s = {
-  page: {
-    minHeight: "100vh",
-    background: "#f5f1eb",
-    fontFamily: "'DM Sans', sans-serif",
-    position: "relative",
-    overflowX: "hidden",
-  },
-  grain: {
-    position: "fixed", inset: "-50%",
-    width: "200%", height: "200%",
-    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E")`,
-    pointerEvents: "none", zIndex: 0,
-    animation: "grain 8s steps(2) infinite",
-  },
-logoRow:  { display: "flex", alignItems: "center", gap: 10 },
-logoText: { fontFamily: "'Lora', serif", fontSize: 18, color: "#1e1e1e", fontWeight: 500 },
+  page: { minHeight: '100vh', background: '#f5f1eb', fontFamily: "'DM Sans', sans-serif" },
+  main: { maxWidth: 760, margin: '0 auto', padding: '72px 24px 100px' },
 
-  main: {
-    position: "relative", zIndex: 1,
-    maxWidth: 1100, margin: "0 auto",
-    padding: "80px 32px 120px",
-  },
+  hero: { textAlign: 'center', marginBottom: 64 },
+  eyebrow: { fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#2D6A4F', marginBottom: 16 },
+  heroTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(38px, 6vw, 56px)', color: '#1e1e1e', lineHeight: 1.15, marginBottom: 20, fontWeight: 400 },
+  heroItalic: { fontStyle: 'italic', color: '#2D6A4F' },
+  heroSub: { fontSize: 16, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, maxWidth: 520, margin: '0 auto' },
 
-  hero: { textAlign: "center", marginBottom: 72, animation: "fadeUp 0.6s ease forwards" },
-  eyebrow: {
-    fontSize: 11, fontWeight: 600, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: "#8a7f72",
-    marginBottom: 20,
-  },
-  heroTitle: {
-    fontFamily: "'Lora', serif",
-    fontSize: "clamp(42px, 6vw, 64px)",
-    color: "#1e1e1e", lineHeight: 1.1,
-    marginBottom: 20, fontWeight: 500,
-  },
-  heroItalic: { fontStyle: "italic", color: "#2D6A4F" },
-  heroSub: {
-    fontSize: 17, color: "#6b6058", lineHeight: 1.65,
-    fontWeight: 300, marginBottom: 36,
-  },
+  featureGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 48 },
+  featureCard: { background: '#fff', borderRadius: 16, padding: '24px 28px', border: '1.5px solid #e8e2d8' },
+  featureIcon:  { fontSize: 22, marginBottom: 10 },
+  featureTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 16, color: '#1e1e1e', marginBottom: 6, fontWeight: 400 },
+  featureBody:  { fontSize: 13, color: '#6b6058', lineHeight: 1.65, fontWeight: 300 },
 
-  toggleRow: { display: "flex", alignItems: "center", gap: 12, justifyContent: "center" },
-  toggleLabel: { fontSize: 14, fontWeight: 500, transition: "color 0.2s", fontFamily: "'DM Sans', sans-serif" },
-  toggleTrack: {
-    width: 44, height: 24, borderRadius: 100,
-    border: "none", position: "relative",
-    transition: "background 0.25s ease", padding: 0,
-    flexShrink: 0,
-  },
-  toggleThumb: {
-    position: "absolute", top: 2,
-    width: 20, height: 20, borderRadius: "50%",
-    background: "#fff",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-    transition: "transform 0.22s ease",
-    display: "block",
-  },
-  saveBadge: {
-    marginLeft: 8, fontSize: 10, fontWeight: 700,
-    letterSpacing: "0.06em", textTransform: "uppercase",
-    background: "#2D6A4F", color: "#fff",
-    padding: "2px 8px", borderRadius: 100,
-  },
+  pricingCard: { background: '#1e1e1e', borderRadius: 24, padding: '48px 48px 44px', marginBottom: 32, position: 'relative' },
+  pricingBadge: { display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#B45309', background: '#fdf6ed', border: '1px solid #f5d9a8', padding: '3px 12px', borderRadius: 100, marginBottom: 20 },
+  pricingName:  { fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.45)', marginBottom: 12 },
+  pricingPriceRow: { display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 },
+  pricingAmount:   { fontFamily: "'DM Serif Display', serif", fontSize: 56, color: '#fff', lineHeight: 1, fontWeight: 400 },
+  pricingPeriod:   { fontSize: 18, color: 'rgba(255,255,255,0.5)', fontWeight: 300 },
+  pricingAnnual:   { fontSize: 13, color: '#86efac', fontWeight: 500, marginBottom: 20 },
+  pricingNote:     { fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, fontWeight: 300, marginBottom: 32, maxWidth: 480 },
 
-  cardsRow: {
-    display: "flex", gap: 24, alignItems: "stretch",
-    justifyContent: "center", marginBottom: 64,
-    flexWrap: "wrap",
-  },
-  card: {
-    background: "#fff", borderRadius: 24,
-    border: "1.5px solid #e8e2d8",
-    padding: "36px 32px 40px",
-    width: 360, flexShrink: 0,
-    position: "relative",
-    display: "flex", flexDirection: "column",
-    transition: "transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease",
-    animation: "fadeUp 0.5s ease forwards",
-    opacity: 0,
-    animationFillMode: "forwards",
-  },
-  cardFeatured: {
-    background: "#1a2332",
-    borderColor: "#2d3f55",
-  },
+  form: { display: 'flex', flexDirection: 'column', gap: 12 },
+  emailInput: { padding: '13px 16px', borderRadius: 12, border: '1.5px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontSize: 14, fontFamily: "'DM Sans', sans-serif", outline: 'none' },
+  submitBtn: { padding: '14px', background: '#fff', color: '#1e1e1e', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
+  submitBtnDisabled: { opacity: 0.6, cursor: 'not-allowed' },
+  formError: { fontSize: 12, color: '#fca5a5' },
+  formMeta:  { fontSize: 11, color: 'rgba(255,255,255,0.3)', textAlign: 'center' },
 
-  badge: {
-    position: "absolute", top: -12, left: "50%",
-    transform: "translateX(-50%)",
-    fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-    textTransform: "uppercase", color: "#fff",
-    padding: "4px 14px", borderRadius: 100,
-    whiteSpace: "nowrap",
-  },
+  successState: { textAlign: 'center', padding: '12px 0' },
+  successIcon:  { width: 48, height: 48, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', color: '#86efac', fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' },
+  successTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 22, color: '#fff', marginBottom: 10 },
+  successBody:  { fontSize: 14, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, fontWeight: 300 },
 
-  cardHeader: { marginBottom: 24, minHeight: 140 },
-  tierName: {
-    fontSize: 12, fontWeight: 700, letterSpacing: "0.1em",
-    textTransform: "uppercase", marginBottom: 12,
-    fontFamily: "'DM Sans', sans-serif",
-  },
-  priceRow: { display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 },
-  price: {
-    fontFamily: "'Lora', serif",
-    fontSize: 48, fontWeight: 500, color: "#1e1e1e",
-    lineHeight: 1,
-  },
-  pricePeriod: { fontSize: 13, color: "#8a7f72", fontWeight: 400 },
-  tagline: { fontSize: 13, color: "#8a7f72", marginTop: 10, lineHeight: 1.5, fontWeight: 300 },
-
-  ctaBtn: {
-    width: "100%", padding: "13px",
-    borderRadius: 12, fontSize: 14, fontWeight: 600,
-    fontFamily: "'DM Sans', sans-serif",
-    letterSpacing: "0.02em", marginBottom: 24,
-  },
-
-  divider: { borderTop: "1px solid", marginBottom: 24 },
-  featureList: { marginTop: 4 },
-
-
-  comingSoon: {
-    background: "#fff",
-    borderRadius: 20,
-    border: "1.5px solid #e8e2d8",
-    padding: "28px 36px",
-    marginBottom: 56,
-    boxShadow: "0 2px 20px rgba(0,0,0,0.04)",
-  },
-  comingSoonInner: { display: "flex", flexDirection: "column", gap: 10 },
-  comingSoonTag: {
-    fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-    textTransform: "uppercase", color: "#B45309",
-    background: "#fdf6ed", border: "1px solid #f5d9a8",
-    padding: "3px 12px", borderRadius: 100,
-    alignSelf: "flex-start",
-  },
-  comingSoonTitle: {
-    fontFamily: "'Lora', serif", fontSize: 18,
-    color: "#1e1e1e", fontWeight: 500,
-  },
-  comingSoonBody: { fontSize: 14, color: "#6b6058", lineHeight: 1.7, fontWeight: 300 },
-
-    faqRow: {
-    display: "grid", gridTemplateColumns: "1fr 1fr",
-    gap: "24px 48px",
-  },
-  faqItem: {},
-  faqQ: {
-    fontFamily: "'Lora', serif", fontSize: 15,
-    color: "#1e1e1e", marginBottom: 6, fontWeight: 500,
-  },
-  faqA: { fontSize: 13, color: "#6b6058", lineHeight: 1.65, fontWeight: 300 },
-
-  footerLogo: { display: "flex", alignItems: "center", gap: 8, justifyContent: "center", marginBottom: 12 },
-  footerLine: { color: "#8a7f72", marginBottom: 8, fontStyle: "italic", fontFamily: "'Lora', serif" },
-  footerMeta: { color: "#b0a99a", letterSpacing: "0.04em", fontSize: 11 },
+  betaNote: { display: 'flex', alignItems: 'flex-start', gap: 10, background: '#f0f7f4', border: '1.5px solid #b7ddd0', borderRadius: 12, padding: '14px 18px', fontSize: 13, color: '#2D6A4F', lineHeight: 1.6, fontWeight: 400 },
+  betaDot:  { width: 8, height: 8, borderRadius: '50%', background: '#2D6A4F', flexShrink: 0, marginTop: 4 },
+  betaLink: { color: '#2D6A4F', fontWeight: 600, textDecoration: 'underline', textDecorationColor: '#b7ddd0' },
 };

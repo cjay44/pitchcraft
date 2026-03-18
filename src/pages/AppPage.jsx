@@ -1,10 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 
 const TABS = ['Proposal', 'Follow-Up', 'Invoice'];
 const MAX_NOTES = 500;
-const FREE_LIMIT = 10;
-const STORAGE_KEY = 'pc_usage';
 
 const TAB_ACCENTS = {
   'Proposal':  { bg: '#f0f7f4', border: '#b7ddd0', badge: '#2D6A4F', label: '#2D6A4F' },
@@ -57,25 +54,6 @@ function buildUserPrompt(tab, form) {
   if (tab === 'Invoice')   return `Generate invoice reminder emails. Designer: ${designerName}, Client: ${clientName}, Project: ${projectType}, Amount: ${budget || 'as discussed'}.`;
 }
 
-function getUsage() {
-  try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (!raw) return 0;
-    const { count, month } = JSON.parse(raw);
-    const now = new Date();
-    return month === `${now.getFullYear()}-${now.getMonth()}` ? count : 0;
-  } catch { return 0; }
-}
-
-function incrementUsage() {
-  try {
-    const now = new Date();
-    const count = getUsage() + 1;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ count, month: `${now.getFullYear()}-${now.getMonth()}` }));
-    return count;
-  } catch { return 0; }
-}
-
 function OutputRenderer({ text }) {
   return (
     <div style={s.outputText}>
@@ -87,26 +65,6 @@ function OutputRenderer({ text }) {
         if (isHeader)       return <div key={i} style={s.outputSectionHeader}>{trimmed}</div>;
         return                     <div key={i} style={s.outputLine}>{line}</div>;
       })}
-    </div>
-  );
-}
-
-function UsageCounter({ used }) {
-  const remaining = Math.max(FREE_LIMIT - used, 0);
-  const pct = (used / FREE_LIMIT) * 100;
-  const color = remaining <= 2 ? '#c0392b' : remaining <= 5 ? '#B45309' : '#2D6A4F';
-  const bgColor = remaining <= 2 ? '#fdf0ef' : remaining <= 5 ? '#fdf6ed' : '#f0f7f4';
-  return (
-    <div style={{ ...s.usagePill, background: bgColor, borderColor: color + '33' }}>
-      <div style={s.usageBarTrack}>
-        <div style={{ ...s.usageBarFill, width: `${pct}%`, background: color }} />
-      </div>
-      <span style={{ ...s.usageText, color }}>
-        {remaining === 0 ? 'Limit reached — upgrade to continue' : `${remaining} of ${FREE_LIMIT} free generations remaining`}
-      </span>
-      {remaining <= 5 && remaining > 0 && (
-        <Link to="/pricing" style={{ ...s.usageUpgrade, color }}>Upgrade →</Link>
-      )}
     </div>
   );
 }
@@ -132,20 +90,6 @@ function SuccessToast({ show, tab }) {
     <div style={{ ...s.toast, opacity: show ? 1 : 0, transform: show ? 'translateY(0)' : 'translateY(8px)', pointerEvents: show ? 'auto' : 'none' }}>
       <span style={s.toastDot} />
       Your {tab.toLowerCase()} is ready — review and send when you're happy with it
-    </div>
-  );
-}
-
-function UpgradeModal({ onClose }) {
-  return (
-    <div style={s.modalOverlay} onClick={onClose}>
-      <div style={s.modalCard} className="pc-modal-card" onClick={e => e.stopPropagation()}>
-        <div style={s.modalIcon}>⚡</div>
-        <div style={s.modalTitle}>You've used all 10 free generations</div>
-        <div style={s.modalBody}>Upgrade to Pro for unlimited proposals, follow-ups, and invoice reminders — plus brand voice, PDF export, and more.</div>
-        <Link to="/pricing" style={s.modalCta} onClick={onClose}>See Pro plan — $29/month</Link>
-        <button style={s.modalDismiss} onClick={onClose}>Maybe later</button>
-      </div>
     </div>
   );
 }
@@ -244,8 +188,6 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [copied, setCopied]           = useState(false);
   const [globalError, setGlobalError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showUpgrade, setShowUpgrade] = useState(false);
-  const [usage, setUsage]             = useState(getUsage);
   const [betaInput, setBetaInput]       = useState('');
   const [betaError, setBetaError]       = useState(false);
   const [showBetaWelcome, setShowBetaWelcome] = useState(false);
@@ -291,11 +233,7 @@ export default function AppPage({ isBeta, activateBeta }) {
     setShowBetaWelcome(true);
   };
 
-  const effectiveLimit = isBeta ? 999 : FREE_LIMIT;
-  const atLimit = usage >= effectiveLimit;
-
   const handleGenerate = async () => {
-    if (atLimit) { setShowUpgrade(true); return; }
     const errors = {};
     if (!form.designerName.trim()) errors.designerName = true;
     if (!form.clientName.trim())   errors.clientName   = true;
@@ -325,14 +263,11 @@ export default function AppPage({ isBeta, activateBeta }) {
       if (!response.ok) throw new Error(`API error: ${response.status}`);
       const data = await response.json();
       const text = data.content?.map(b => b.text || '').join('') || 'No response received.';
-      const newCount = incrementUsage();
-      setUsage(newCount);
       setOutput(text);
       setEditedOutput(text);
       setIsEditing(false);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
-      if (newCount >= FREE_LIMIT && !isBeta) setTimeout(() => setShowUpgrade(true), 1500);
     } catch (err) {
       setGlobalError(!navigator.onLine
         ? 'No internet connection. Check your network and try again.'
@@ -343,7 +278,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   };
 
   const handleCopy = () => {
-    const text = editedOutput + (isBeta ? '' : '\n\n— Made with Pitchcraft (pitchcraft.io)');
+    const text = editedOutput;
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => fallbackCopy(text));
     } else { fallbackCopy(text); }
@@ -371,7 +306,6 @@ export default function AppPage({ isBeta, activateBeta }) {
   return (
     <div style={s.page}>
       <div style={s.bgTexture} />
-      {showUpgrade && <UpgradeModal onClose={() => setShowUpgrade(false)} />}
       {showBetaWelcome && <BetaWelcomeModal onClose={() => setShowBetaWelcome(false)} />}
 
       <main style={s.main} className="pc-main">
@@ -399,9 +333,6 @@ export default function AppPage({ isBeta, activateBeta }) {
             {betaError && <span style={s.betaErrMsg}>Invalid code — check your invite email</span>}
           </div>
         )}
-
-        {/* Usage counter */}
-        {!isBeta && <UsageCounter used={usage} />}
 
         {/* Card */}
         <div style={s.card} className="pc-card">
@@ -453,11 +384,11 @@ export default function AppPage({ isBeta, activateBeta }) {
 
           <ToneSelector tone={tone} setTone={setTone} loading={loading} />
 
-          <button onClick={handleGenerate} disabled={loading || atLimit}
-            style={{ ...s.generateBtn, ...(loading || atLimit ? s.generateBtnDisabled : {}) }}>
+          <button onClick={handleGenerate} disabled={loading}
+            style={{ ...s.generateBtn, ...(loading ? s.generateBtnDisabled : {}) }}>
             {loading
               ? <span style={s.loadingRow}><span style={s.spinner} />Generating your {activeTab.toLowerCase()}...</span>
-              : atLimit ? 'Upgrade to Pro to continue' : `Generate ${activeTab}`}
+              : `Generate ${activeTab}`}
           </button>
         </div>
 
@@ -508,36 +439,12 @@ export default function AppPage({ isBeta, activateBeta }) {
                     rows={1}
                     style={{ ...s.editableOutput, border: isEditing ? '1.5px solid #d5cec4' : 'none' }}
                   />
-                  {!isBeta && (
-                    <div style={s.watermark}>
-                      Made with <Link to="/" style={s.watermarkLink}>Pitchcraft</Link> · Free plan ·{' '}
-                      <Link to="/pricing" style={s.watermarkLink}>Upgrade to remove</Link>
-                    </div>
-                  )}
                 </>
               )}
             </div>
           </div>
         ) : (
           <EmptyState tab={activeTab} />
-        )}
-
-        {/* Pricing teaser */}
-        {!isBeta && (
-          <div style={s.pricingTeaser} className="pc-pricing-teaser">
-            <div style={s.pricingTeaserInner} className="pc-pricing-teaser-inner">
-              <div style={s.pricingTeaserLeft}>
-                <div style={s.pricingTeaserLabel}>Pitchcraft Pro</div>
-                <div style={s.pricingTeaserTitle}>Unlimited generations.<br />Your voice. Your brand.</div>
-                <div style={s.pricingTeaserBody}>Brand voice profile, 30-day history, PDF export, direct email send, and no watermark.</div>
-              </div>
-              <div style={s.pricingTeaserRight} className="pc-pricing-teaser-right">
-                <div style={s.pricingPrice}>$29<span style={s.pricingPeriod}>/mo</span></div>
-                <Link to="/pricing" style={s.pricingCta} className="pc-pricing-cta">See Pro plan</Link>
-                <div style={s.pricingMeta}>No contracts · Cancel anytime</div>
-              </div>
-            </div>
-          </div>
         )}
       </main>
     </div>
@@ -560,11 +467,6 @@ const s = {
   betaInput: { flex: 1, minWidth: 120, padding: '7px 12px', borderRadius: 8, border: '1.5px solid #e8e2d8', background: '#faf8f5', fontSize: 13, fontFamily: "'DM Sans', sans-serif", outline: 'none', letterSpacing: '0.06em' },
   betaBtn:   { padding: '7px 16px', borderRadius: 8, background: '#1e1e1e', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600 },
   betaErrMsg:{ fontSize: 11, color: '#c0392b', width: '100%' },
-  usagePill: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderRadius: 12, border: '1.5px solid', marginBottom: 20, flexWrap: 'wrap' },
-  usageBarTrack: { width: 80, height: 4, background: 'rgba(0,0,0,0.08)', borderRadius: 100, flexShrink: 0 },
-  usageBarFill:  { height: '100%', borderRadius: 100, transition: 'width 0.4s ease' },
-  usageText:     { fontSize: 13, fontWeight: 500, flex: 1 },
-  usageUpgrade:  { fontSize: 12, fontWeight: 700 },
   card:      { background: '#fff', borderRadius: 20, padding: '36px 40px', boxShadow: '0 2px 40px rgba(0,0,0,0.06)', marginBottom: 20 },
   tabRow:    { display: 'flex', gap: 8, marginBottom: 8 },
   tab:       { padding: '8px 20px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', color: '#8a7f72', fontSize: 14, fontWeight: 500 },
@@ -609,28 +511,10 @@ const s = {
   outputText:      { fontFamily: "'DM Sans', sans-serif" },
   outputSectionHeader: { fontSize: 12, fontWeight: 700, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
   outputLine:      { fontSize: 14, lineHeight: 1.8, color: '#3a3028', fontWeight: 300 },
-  watermark:       { marginTop: 28, paddingTop: 16, borderTop: '1px solid #f0ebe3', fontSize: 12, color: '#b0a99a', textAlign: 'center' },
-  watermarkLink:   { color: '#8a7f72', fontWeight: 500, textDecoration: 'underline', textDecorationColor: '#d5cec4' },
   skeleton:        { display: 'flex', flexDirection: 'column', gap: 10 },
   skeletonLine:    { height: 14, background: 'linear-gradient(90deg, #f0ebe3 25%, #e8e2d8 50%, #f0ebe3 75%)', borderRadius: 4, animation: 'shimmer 1.4s ease infinite' },
-  pricingTeaser:   { background: '#1e1e1e', borderRadius: 20, padding: '40px' },
-  pricingTeaserInner: { display: 'flex', gap: 40, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' },
-  pricingTeaserLeft:  { flex: 1, minWidth: 200 },
-  pricingTeaserLabel: { fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#86efac', marginBottom: 10 },
-  pricingTeaserTitle: { fontFamily: "'DM Serif Display', serif", fontSize: 24, color: '#fff', lineHeight: 1.25, marginBottom: 12 },
-  pricingTeaserBody:  { fontSize: 13, color: 'rgba(255,255,255,0.55)', lineHeight: 1.7, fontWeight: 300 },
-  pricingTeaserRight: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0 },
-  pricingPrice:    { fontFamily: "'DM Serif Display', serif", fontSize: 48, color: '#fff', lineHeight: 1 },
-  pricingPeriod:   { fontSize: 18, color: 'rgba(255,255,255,0.5)', fontWeight: 300 },
-  pricingCta:      { background: '#fff', color: '#1e1e1e', borderRadius: 12, padding: '13px 28px', fontSize: 14, fontWeight: 700, display: 'block', textAlign: 'center' },
-  pricingMeta:     { fontSize: 11, color: 'rgba(255,255,255,0.35)', letterSpacing: '0.04em' },
   modalOverlay:    { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 },
   modalCard:       { background: '#fff', borderRadius: 24, padding: '48px 40px', maxWidth: 420, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' },
-  modalIcon:       { fontSize: 36, marginBottom: 20 },
-  modalTitle:      { fontFamily: "'DM Serif Display', serif", fontSize: 24, color: '#1e1e1e', marginBottom: 14, lineHeight: 1.3 },
-  modalBody:       { fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, marginBottom: 28 },
-  modalCta:        { display: 'block', background: '#1e1e1e', color: '#f5f1eb', borderRadius: 12, padding: '14px 24px', fontSize: 15, fontWeight: 600, marginBottom: 12, textAlign: 'center' },
-  modalDismiss:    { background: 'transparent', border: 'none', color: '#a09488', fontSize: 13, cursor: 'pointer', width: '100%', padding: '8px' },
   toneSelectorRow: { display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16, flexWrap: 'wrap' },
   toneLabel:       { fontSize: 12, fontWeight: 600, color: '#5a5048', letterSpacing: '0.04em', textTransform: 'uppercase', flexShrink: 0 },
   tonePills:       { display: 'flex', gap: 8, flexWrap: 'wrap' },

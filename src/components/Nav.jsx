@@ -32,9 +32,6 @@ export default function Nav({ isBeta }) {
         <Link to="/roadmap"    onClick={close} style={{ ...s.navLink, ...(pathname === "/roadmap"    ? s.navActive : {}) }}>Roadmap</Link>
         <Link to="/pricing"    onClick={close} style={{ ...s.navLink, ...(pathname === "/pricing"    ? s.navActive : {}) }}>Pricing</Link>
         <Link to="/feedback"   onClick={close} style={{ ...s.navLink, ...(pathname === "/feedback"   ? s.navActive : {}) }}>Feedback</Link>
-        {!isBeta && (
-          <Link to="/pricing" onClick={close} style={s.navCta} className="pc-nav-cta">Upgrade to Pro →</Link>
-        )}
         {isBeta && (
           <div style={s.betaPill} className="pc-beta-pill">
             <span style={s.betaDot} />
@@ -67,11 +64,6 @@ const s = {
   nav:      { display: 'flex', alignItems: 'center', gap: 24 },
   navLink:  { fontSize: 14, color: '#6b6058', fontWeight: 400, transition: 'color 0.15s' },
   navActive:{ color: '#1e1e1e', fontWeight: 600 },
-  navCta:   {
-    fontSize: 13, fontWeight: 600, color: '#fff', background: '#1e1e1e',
-    padding: '8px 18px', borderRadius: 100, letterSpacing: '0.01em',
-    transition: 'opacity 0.18s',
-  },
   betaPill: {
     display: 'flex', alignItems: 'center', gap: 7,
     background: '#f0f7f4', border: '1.5px solid #b7ddd0',
