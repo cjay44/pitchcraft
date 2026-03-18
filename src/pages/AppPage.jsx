@@ -188,6 +188,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   const [form, setForm]               = useState({ designerName: '', clientName: '', projectType: '', budget: '', timeline: '', notes: '' });
   const [fieldErrors, setFieldErrors] = useState({});
   const [output, setOutput]           = useState('');
+  const [editedOutput, setEditedOutput] = useState('');
   const [loading, setLoading]         = useState(false);
   const [copied, setCopied]           = useState(false);
   const [globalError, setGlobalError] = useState('');
@@ -216,6 +217,7 @@ export default function AppPage({ isBeta, activateBeta }) {
     if (loading) return;
     setActiveTab(tab);
     setOutput('');
+    setEditedOutput('');
     setGlobalError('');
     setFieldErrors({});
     setShowSuccess(false);
@@ -264,6 +266,7 @@ export default function AppPage({ isBeta, activateBeta }) {
       const newCount = incrementUsage();
       setUsage(newCount);
       setOutput(text);
+      setEditedOutput(text);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 4000);
       if (newCount >= FREE_LIMIT && !isBeta) setTimeout(() => setShowUpgrade(true), 1500);
@@ -277,7 +280,7 @@ export default function AppPage({ isBeta, activateBeta }) {
   };
 
   const handleCopy = () => {
-    const text = output + (isBeta ? '' : '\n\n— Made with Pitchcraft (pitchcraft.io)');
+    const text = editedOutput + (isBeta ? '' : '\n\n— Made with Pitchcraft (pitchcraft.io)');
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }).catch(() => fallbackCopy(text));
     } else { fallbackCopy(text); }
@@ -418,7 +421,13 @@ export default function AppPage({ isBeta, activateBeta }) {
                 </div>
               ) : (
                 <>
-                  <OutputRenderer text={output} />
+                  <div style={s.editLabel}>✏️ Edit before sending</div>
+                  <textarea
+                    value={editedOutput}
+                    onChange={e => setEditedOutput(e.target.value)}
+                    placeholder="Your generated content will appear here..."
+                    style={s.editableOutput}
+                  />
                   {!isBeta && (
                     <div style={s.watermark}>
                       Made with <Link to="/" style={s.watermarkLink}>Pitchcraft</Link> · Free plan ·{' '}
@@ -511,6 +520,8 @@ const s = {
   outputTitle:     { fontFamily: "'DM Serif Display', serif", fontSize: 18, color: '#1e1e1e' },
   copyBtn:         { padding: '7px 18px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', fontSize: 13, fontWeight: 500, transition: 'all 0.2s ease', cursor: 'pointer' },
   outputBody:      { padding: '28px 32px' },
+  editLabel:       { fontSize: 11, color: '#a09488', fontStyle: 'italic', marginBottom: 8 },
+  editableOutput:  { width: '100%', minHeight: 320, border: 'none', background: 'transparent', fontFamily: "'DM Sans', sans-serif", fontSize: 14, lineHeight: 1.8, color: '#1e1e1e', resize: 'vertical', outline: 'none', padding: 0, boxSizing: 'border-box' },
   outputText:      { fontFamily: "'DM Sans', sans-serif" },
   outputSectionHeader: { fontSize: 12, fontWeight: 700, color: '#1e1e1e', letterSpacing: '0.06em', textTransform: 'uppercase', marginTop: 24, marginBottom: 8 },
   outputLine:      { fontSize: 14, lineHeight: 1.8, color: '#3a3028', fontWeight: 300 },
