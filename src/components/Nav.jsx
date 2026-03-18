@@ -19,6 +19,8 @@ export default function Nav({ isBeta }) {
         className="pc-hamburger"
         onClick={() => setMenuOpen(!menuOpen)}
         aria-label="Toggle menu"
+        aria-expanded={menuOpen}
+        aria-controls="pc-nav-menu"
         style={s.hamburger}
       >
         <span className={`pc-ham-line${menuOpen ? ' pc-ham-open-1' : ''}`} />
@@ -26,7 +28,7 @@ export default function Nav({ isBeta }) {
         <span className={`pc-ham-line${menuOpen ? ' pc-ham-open-3' : ''}`} />
       </button>
 
-      <nav style={s.nav} className={`pc-nav${menuOpen ? ' open' : ''}`}>
+      <nav id="pc-nav-menu" style={s.nav} className={`pc-nav${menuOpen ? ' open' : ''}`}>
         <Link to="/"           onClick={close} style={{ ...s.navLink, ...(pathname === "/"           ? s.navActive : {}) }}>Craft</Link>
         <Link to="/dashboard"  onClick={close} style={{ ...s.navLink, ...(pathname === "/dashboard"  ? s.navActive : {}) }}>Dashboard</Link>
         <Link to="/roadmap"    onClick={close} style={{ ...s.navLink, ...(pathname === "/roadmap"    ? s.navActive : {}) }}>Roadmap</Link>
@@ -60,7 +62,7 @@ const s = {
     fontSize: 12, fontWeight: 700, letterSpacing: '0.05em', flexShrink: 0,
   },
   logoText: { fontFamily: "'DM Serif Display', serif", fontSize: 19, color: '#1e1e1e', lineHeight: 1.2 },
-  logoSub:  { fontSize: 10, color: '#8a7f72', letterSpacing: '0.05em', textTransform: 'uppercase' },
+  logoSub:  { fontSize: 10, color: '#6b6058', letterSpacing: '0.05em', textTransform: 'uppercase' },
   nav:      { display: 'flex', alignItems: 'center', gap: 24 },
   navLink:  { fontSize: 14, color: '#6b6058', fontWeight: 400, transition: 'color 0.15s' },
   navActive:{ color: '#1e1e1e', fontWeight: 600 },

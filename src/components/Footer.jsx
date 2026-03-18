@@ -9,7 +9,7 @@ export default function Footer() {
         </div>
         <div style={s.tagline}>Craft it in seconds. Send it with confidence.</div>
         <nav style={s.links}>
-          <Link to="/"           style={s.link}>App</Link>
+          <Link to="/"           style={s.link}>Craft</Link>
           <Link to="/dashboard"  style={s.link}>Dashboard</Link>
           <Link to="/roadmap"    style={s.link}>Roadmap</Link>
           <Link to="/pricing"    style={s.link}>Pro — Coming soon</Link>
@@ -27,8 +27,8 @@ const s = {
   logoRow:{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginBottom: 10 },
   logoMark: { width: 28, height: 28, background: '#1e1e1e', color: '#f5f1eb', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700 },
   logoText: { fontFamily: "'DM Serif Display', serif", fontSize: 16, color: '#1e1e1e' },
-  tagline:  { fontSize: 13, color: '#8a7f72', fontStyle: 'italic', fontFamily: "'DM Serif Display', serif", marginBottom: 16 },
+  tagline:  { fontSize: 13, color: '#6b6058', fontStyle: 'italic', fontFamily: "'DM Serif Display', serif", marginBottom: 16 },
   links:    { display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 16 },
-  link:     { fontSize: 13, color: '#8a7f72', transition: 'color 0.15s' },
+  link:     { fontSize: 13, color: '#6b6058', transition: 'color 0.15s' },
   meta:     { fontSize: 11, color: '#b0a99a', letterSpacing: '0.04em' },
 };

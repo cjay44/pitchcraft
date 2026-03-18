@@ -325,7 +325,14 @@ function UsageCounter({ used }) {
   const bgColor = remaining <= 2 ? '#fdf0ef' : remaining <= 5 ? '#fdf6ed' : '#f0f7f4';
   return (
     <div style={{ ...s.usagePill, background: bgColor, borderColor: color + '33' }}>
-      <div style={s.usageBarTrack}>
+      <div
+        style={s.usageBarTrack}
+        role="progressbar"
+        aria-valuenow={used}
+        aria-valuemin={0}
+        aria-valuemax={FREE_LIMIT}
+        aria-label={`${remaining} of ${FREE_LIMIT} free generations remaining`}
+      >
         <div style={{ ...s.usageBarFill, width: `${pct}%`, background: color }} />
       </div>
       <span style={{ ...s.usageText, color }}>
@@ -383,13 +390,15 @@ function UpgradeModal({ onClose }) {
 function ToneSelector({ tone, setTone, loading }) {
   return (
     <div style={ts.wrap}>
-      <div style={ts.label}>Tone</div>
-      <div style={ts.pills}>
+      <span id="tone-group-label" style={ts.label}>Tone</span>
+      <div style={ts.pills} role="radiogroup" aria-labelledby="tone-group-label">
         {TONES.map(t => {
           const active = tone === t.id;
           return (
             <button
               key={t.id}
+              role="radio"
+              aria-checked={active}
               onClick={() => !loading && setTone(t.id)}
               disabled={loading}
               title={t.description}
@@ -404,7 +413,7 @@ function ToneSelector({ tone, setTone, loading }) {
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >
-              <span style={{ fontSize: 14 }}>{t.emoji}</span>
+              <span aria-hidden="true" style={{ fontSize: 14 }}>{t.emoji}</span>
               <span style={{ fontWeight: active ? 600 : 400 }}>{t.label}</span>
             </button>
           );
@@ -592,28 +601,52 @@ export default function AppPage({ isBeta, activateBeta }) {
 
         {/* Card */}
         <div style={s.card}>
-          <div style={s.tabRow}>
-            {TABS.map(tab => (
-              <button key={tab} onClick={() => handleTabSwitch(tab)} disabled={loading}
-                style={{ ...s.tab, ...(activeTab === tab ? s.tabActive : {}), ...(loading ? s.tabDisabled : {}) }}>
-                {tab}
-              </button>
-            ))}
+          <div style={s.tabRow} role="tablist" aria-label="Document type">
+            {TABS.map(tab => {
+              const tabId = `tab-${tab.toLowerCase().replace('-', '')}`;
+              const panelId = `panel-${tab.toLowerCase().replace('-', '')}`;
+              return (
+                <button
+                  key={tab}
+                  id={tabId}
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  aria-controls={panelId}
+                  onClick={() => handleTabSwitch(tab)}
+                  disabled={loading}
+                  onKeyDown={e => {
+                    if (loading) return;
+                    const idx = TABS.indexOf(tab);
+                    if (e.key === 'ArrowRight') { e.preventDefault(); handleTabSwitch(TABS[(idx + 1) % TABS.length]); }
+                    if (e.key === 'ArrowLeft')  { e.preventDefault(); handleTabSwitch(TABS[(idx - 1 + TABS.length) % TABS.length]); }
+                  }}
+                  style={{ ...s.tab, ...(activeTab === tab ? s.tabActive : {}), ...(loading ? s.tabDisabled : {}) }}
+                >
+                  {tab}
+                </button>
+              );
+            })}
           </div>
+          <div
+            role="tabpanel"
+            id={`panel-${activeTab.toLowerCase().replace('-', '')}`}
+            aria-labelledby={`tab-${activeTab.toLowerCase().replace('-', '')}`}
+          >
           <p style={s.tabDesc}>{tabDescriptions[activeTab]}</p>
 
           <div style={s.formGrid}>
             {[
-              { name: 'designerName', label: 'Your Name', placeholder: 'e.g. Sarah Chen', required: true },
-              { name: 'clientName',   label: 'Client Name', placeholder: 'e.g. Bloom Studio', required: true },
-              { name: 'projectType',  label: 'Project Type', placeholder: 'e.g. Brand identity & logo design', required: true },
-              { name: 'budget',       label: 'Budget', placeholder: 'e.g. $2,500' },
-              { name: 'timeline',     label: 'Timeline', placeholder: 'e.g. 3 weeks' },
+              { name: 'designerName', label: 'Your Name', placeholder: 'e.g. Sarah Chen', required: true, autoComplete: 'name' },
+              { name: 'clientName',   label: 'Client Name', placeholder: 'e.g. Bloom Studio', required: true, autoComplete: 'off' },
+              { name: 'projectType',  label: 'Project Type', placeholder: 'e.g. Brand identity & logo design', required: true, autoComplete: 'off' },
+              { name: 'budget',       label: 'Budget', placeholder: 'e.g. $2,500', autoComplete: 'off' },
+              { name: 'timeline',     label: 'Timeline', placeholder: 'e.g. 3 weeks', autoComplete: 'off', fullWidth: true },
             ].map(field => (
-              <div key={field.name} style={s.fieldGroup}>
-                <label style={s.label}>{field.label}{field.required && <span style={s.required}> *</span>}</label>
-                <input name={field.name} value={form[field.name]} onChange={handleChange}
+              <div key={field.name} style={{ ...s.fieldGroup, ...(field.fullWidth ? { gridColumn: '1 / -1' } : {}) }}>
+                <label htmlFor={field.name} style={s.label}>{field.label}{field.required && <span style={s.required}> *</span>}</label>
+                <input id={field.name} name={field.name} value={form[field.name]} onChange={handleChange}
                   placeholder={field.placeholder}
+                  autoComplete={field.autoComplete}
                   style={{ ...s.input, ...(fieldErrors[field.name] ? s.inputError : {}) }} />
                 {fieldErrors[field.name] && <span style={s.fieldError}>Required</span>}
               </div>
@@ -621,12 +654,12 @@ export default function AppPage({ isBeta, activateBeta }) {
 
             <div style={{ ...s.fieldGroup, gridColumn: '1 / -1' }}>
               <div style={s.labelRow}>
-                <label style={s.label}>Additional Notes</label>
+                <label htmlFor="notes" style={s.label}>Additional Notes</label>
                 <span style={{ ...s.charCounter, color: notesLen >= MAX_NOTES ? '#c0392b' : notesLen >= MAX_NOTES * 0.8 ? '#B45309' : '#b0a99a' }}>
                   {notesLen} / {MAX_NOTES}
                 </span>
               </div>
-              <textarea name="notes" value={form.notes} onChange={handleChange}
+              <textarea id="notes" name="notes" value={form.notes} onChange={handleChange}
                 placeholder="Any special requirements, client context, or tone preferences..."
                 style={{ ...s.input, ...s.textarea }} />
             </div>
@@ -637,6 +670,7 @@ export default function AppPage({ isBeta, activateBeta }) {
               <span style={s.errorIcon}>!</span>{globalError}
             </div>
           )}
+          </div>{/* end tabpanel */}
 
           <ToneSelector tone={tone} setTone={setTone} loading={loading} />
 
@@ -649,6 +683,10 @@ export default function AppPage({ isBeta, activateBeta }) {
         </div>
 
         <SuccessToast show={showSuccess} tab={activeTab} />
+
+        <div aria-live="polite" aria-atomic="true" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}>
+          {showSuccess ? `Your ${activeTab.toLowerCase()} is ready. Review and edit before copying.` : ''}
+        </div>
 
         {output || loading ? (
           <div ref={outputRef} style={{ ...s.outputCard, borderTop: `3px solid ${accent.border}` }}>
@@ -735,7 +773,7 @@ const s = {
   tab:       { padding: '8px 20px', borderRadius: 100, border: '1.5px solid #e8e2d8', background: 'transparent', color: '#8a7f72', fontSize: 14, fontWeight: 500 },
   tabActive: { background: '#1e1e1e', borderColor: '#1e1e1e', color: '#fff' },
   tabDisabled: { opacity: 0.4, cursor: 'not-allowed', pointerEvents: 'none' },
-  tabDesc:   { fontSize: 13, color: '#a09488', marginBottom: 28, fontWeight: 300 },
+  tabDesc:   { fontSize: 13, color: '#6b6058', marginBottom: 28, fontWeight: 300 },
   formGrid:  { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '18px 24px', marginBottom: 24 },
   fieldGroup:{ display: 'flex', flexDirection: 'column', gap: 4 },
   labelRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
@@ -757,7 +795,7 @@ const s = {
   emptyState:{ textAlign: 'center', padding: '48px 32px', background: '#fff', borderRadius: 20, boxShadow: '0 2px 20px rgba(0,0,0,0.04)', marginBottom: 28, border: '1.5px dashed #d5cec4' },
   emptyIcon: { fontSize: 28, marginBottom: 16, color: '#a09488' },
   emptyTitle:{ fontFamily: "'DM Serif Display', serif", fontSize: 20, color: '#1e1e1e', marginBottom: 10 },
-  emptyBody: { fontSize: 14, color: '#8a7f72', lineHeight: 1.7, fontWeight: 300, maxWidth: 380, margin: '0 auto' },
+  emptyBody: { fontSize: 14, color: '#6b6058', lineHeight: 1.7, fontWeight: 300, maxWidth: 380, margin: '0 auto' },
   outputCard:{ background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 2px 40px rgba(0,0,0,0.06)', marginBottom: 28, animation: 'fadeUp 0.4s ease forwards' },
   outputHeaderRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 32px', borderBottom: '1px solid rgba(0,0,0,0.06)' },
   outputTitleRow:  { display: 'flex', alignItems: 'center', gap: 10 },

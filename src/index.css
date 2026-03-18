@@ -1,3 +1,21 @@
+/* ── Skip link ── */
+.pc-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 8px;
+  background: #1e1e1e;
+  color: #f5f1eb;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 9999;
+  text-decoration: none;
+}
+.pc-skip-link:focus {
+  left: 8px;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

@@ -28,8 +28,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <a href="#pc-main-content" className="pc-skip-link">Skip to main content</a>
         <Nav isBeta={isBeta} />
-        <div style={{ flex: 1 }}>
+        <div id="pc-main-content" tabIndex={-1} style={{ flex: 1 }}>
           <Routes>
             <Route path="/"         element={<AppPage      isBeta={isBeta} activateBeta={activateBeta} />} />
             <Route path="/pricing"   element={<PricingPage   isBeta={isBeta} />} />
