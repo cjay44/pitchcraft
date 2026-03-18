@@ -189,14 +189,16 @@ export default function PricingPage() {
                 </div>
 
                 {/* CTA */}
-                <button style={{
-                  ...s.ctaBtn,
-                  ...(tier.ctaStyle === "solid" ? { background: "#ffffff", color: "#1a2332", border: "2px solid #ffffff", fontWeight: 700 } : {}),
-                  ...(tier.ctaStyle === "outline" ? { background: "transparent", color: "#1e1e1e", border: "1.5px solid #d5cec4" } : {}),
-                  ...(tier.ctaStyle === "accent" ? { background: tier.accent, color: "#fff", border: "none" } : {}),
-                }}>
-                  {tier.cta}
-                </button>
+                <div style={{ marginTop: 'auto' }}>
+                  <button style={{
+                    ...s.ctaBtn,
+                    ...(tier.ctaStyle === "solid" ? { background: "#ffffff", color: "#1a2332", border: "2px solid #ffffff", fontWeight: 700 } : {}),
+                    ...(tier.ctaStyle === "outline" ? { background: "transparent", color: "#1e1e1e", border: "1.5px solid #d5cec4" } : {}),
+                    ...(tier.ctaStyle === "accent" ? { background: tier.accent, color: "#fff", border: "none" } : {}),
+                  }}>
+                    {tier.cta}
+                  </button>
+                </div>
 
                 {/* Divider */}
                 <div style={{ ...s.divider, borderColor: isPro ? "rgba(255,255,255,0.15)" : "#f0ebe3" }} />
@@ -367,7 +369,7 @@ logoText: { fontFamily: "'Lora', serif", fontSize: 18, color: "#1e1e1e", fontWei
   },
 
   divider: { borderTop: "1px solid", marginBottom: 24 },
-  featureList: { flex: 1, marginTop: 4 },
+  featureList: { marginTop: 4 },
 
 
   comingSoon: {
